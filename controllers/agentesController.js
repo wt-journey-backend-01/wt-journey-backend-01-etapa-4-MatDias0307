@@ -1,5 +1,10 @@
 const agentesRepository = require("../repositories/agentesRepository");
 
+function validateId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
 function validateAgenteForUpdate(agente, isFullUpdate = false) {
     const errors = [];
     
@@ -119,6 +124,13 @@ async function getAllAgentes(req, res) {
 
 async function getAgenteById(req, res) {
     try {
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         const agente = await agentesRepository.findById(req.params.id);
         if (agente) {
             res.json(agente);
@@ -177,6 +189,13 @@ async function updateAgente(req, res) {
             });
         }
 
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         const errors = validateAgenteForUpdate(req.body, true);
         if (errors.length > 0) {
             return res.status(400).json({
@@ -215,6 +234,13 @@ async function patchAgente(req, res) {
             });
         }
 
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         const errors = validateAgenteForUpdate(req.body, false);
         if (errors.length > 0) {
             return res.status(400).json({
@@ -245,6 +271,13 @@ async function patchAgente(req, res) {
 
 async function deleteAgente(req, res) {
     try {
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         const agenteExistente = await agentesRepository.findById(req.params.id);
         if (!agenteExistente) {
             return res.status(404).json({ 
@@ -266,6 +299,13 @@ async function deleteAgente(req, res) {
 
 async function getCasosByAgenteId(req, res) {
     try {
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+        
         const agente = await agentesRepository.findById(req.params.id);
         if (!agente) {
             return res.status(404).json({

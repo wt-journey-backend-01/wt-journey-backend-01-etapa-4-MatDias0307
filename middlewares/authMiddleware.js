@@ -1,6 +1,8 @@
 const jwt = require('jsonwebtoken');
 const usuariosRepository = require('../repositories/usuariosRepository');
 
+const tokenBlacklist = new Set();
+
 async function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
@@ -12,13 +14,20 @@ async function authenticateToken(req, res, next) {
         });
     }
 
+    if (tokenBlacklist.has(token)) {
+        return res.status(401).json({
+            status: 401,
+            message: "Token inválido"
+        });
+    }
+
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
         const usuario = await usuariosRepository.findById(decoded.id);
         
         if (!usuario) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(401).json({
+                status: 401,
                 message: "Usuário não encontrado"
             });
         }
@@ -34,8 +43,8 @@ async function authenticateToken(req, res, next) {
         }
         
         if (error.name === 'JsonWebTokenError') {
-            return res.status(403).json({
-                status: 403,
+            return res.status(401).json({
+                status: 401,
                 message: "Token inválido"
             });
         }

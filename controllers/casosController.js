@@ -1,6 +1,11 @@
 const casosRepository = require("../repositories/casosRepository");
 const agentesRepository = require("../repositories/agentesRepository");
 
+function validateId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
 function validateCaso(caso, isUpdate = false) {
     const errors = [];
 
@@ -81,6 +86,13 @@ async function getAllCasos(req, res) {
 
 async function getCasoById(req, res) {
     try {
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         const caso = await casosRepository.findById(req.params.id);
         if (!caso) {
             return res.status(404).json({ 
@@ -145,6 +157,13 @@ async function updateCaso(req, res) {
             });
         }
 
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({
                 status: 400,
@@ -199,6 +218,13 @@ async function patchCaso(req, res) {
             });
         }
 
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({
                 status: 400,
@@ -249,6 +275,13 @@ async function patchCaso(req, res) {
 
 async function deleteCaso(req, res) {
     try {
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
+        
         const casoExistente = await casosRepository.findById(req.params.id);
         if (!casoExistente) {
             return res.status(404).json({ 

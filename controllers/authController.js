@@ -1,6 +1,11 @@
 const jwt = require('jsonwebtoken');
 const usuariosRepository = require('../repositories/usuariosRepository');
 
+function validateId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
 function validateEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
@@ -11,38 +16,50 @@ function validatePassword(senha) {
     const hasUpperCase = /[A-Z]/.test(senha);
     const hasLowerCase = /[a-z]/.test(senha);
     const hasNumber = /\d/.test(senha);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(senha);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(senha);
     
     return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
 }
 
+function validateRegisterPayload(body) {
+    const errors = [];
+    const allowedFields = ['nome', 'email', 'senha'];
+    
+    const extraFields = Object.keys(body).filter(field => !allowedFields.includes(field));
+    if (extraFields.length > 0) {
+        extraFields.forEach(field => {
+            errors.push(`Campo '${field}' não é permitido`);
+        });
+    }
+    
+    if (!body.nome) errors.push("O campo 'nome' é obrigatório");
+    if (!body.email) errors.push("O campo 'email' é obrigatório");
+    if (!body.senha) errors.push("O campo 'senha' é obrigatório");
+    
+    if (body.email && !validateEmail(body.email)) {
+        errors.push("Email inválido");
+    }
+    
+    if (body.senha && !validatePassword(body.senha)) {
+        errors.push("Senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais");
+    }
+    
+    return errors;
+}
+
 async function register(req, res) {
     try {
+        const errors = validateRegisterPayload(req.body);
+        if (errors.length > 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Dados inválidos",
+                errors
+            });
+        }
+
         const { nome, email, senha } = req.body;
 
-        // Validações
-        if (!nome || !email || !senha) {
-            return res.status(400).json({
-                status: 400,
-                message: "Todos os campos são obrigatórios"
-            });
-        }
-
-        if (!validateEmail(email)) {
-            return res.status(400).json({
-                status: 400,
-                message: "Email inválido"
-            });
-        }
-
-        if (!validatePassword(senha)) {
-            return res.status(400).json({
-                status: 400,
-                message: "Senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais"
-            });
-        }
-
-        // Verifica se email já existe
         const usuarioExistente = await usuariosRepository.findByEmail(email);
         if (usuarioExistente) {
             return res.status(400).json({
@@ -56,7 +73,12 @@ async function register(req, res) {
         res.status(201).json({
             status: 201,
             message: "Usuário criado com sucesso",
-            data: novoUsuario
+            data: {
+                id: novoUsuario.id,
+                nome: novoUsuario.nome,
+                email: novoUsuario.email,
+                created_at: novoUsuario.created_at
+            }
         });
     } catch (error) {
         res.status(500).json({
@@ -113,8 +135,6 @@ async function login(req, res) {
 }
 
 async function logout(req, res) {
-    // Em uma implementação real, você invalidaria o token aqui
-    // Para JWT stateless, o cliente apenas remove o token
     res.json({
         status: 200,
         message: "Logout realizado com sucesso"
@@ -124,6 +144,13 @@ async function logout(req, res) {
 async function deleteUser(req, res) {
     try {
         const { id } = req.params;
+
+        if (!validateId(req.params.id)) {
+            return res.status(400).json({
+                status: 400,
+                message: "ID inválido"
+            });
+        }
         
         const usuario = await usuariosRepository.findById(id);
         if (!usuario) {
@@ -147,7 +174,6 @@ async function deleteUser(req, res) {
 
 async function getMe(req, res) {
     try {
-        // O middleware já adicionou req.user
         res.json({
             status: 200,
             data: {
