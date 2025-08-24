@@ -1,39 +1,46 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 7 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para MatDias0307:
 
 Nota final: **48.7/100**
 
-# Feedback para MatDias0307 🚓🔐
+Olá, MatDias0307! 👋🚀
 
-Olá Matheus! Primeiro, parabéns pelo esforço e pela estruturação do seu projeto! 🎉 Você conseguiu implementar uma API robusta, com autenticação via JWT, rotas protegidas, e uma organização clara entre controllers, repositories, rotas e middlewares. Isso é essencial para projetos profissionais e escaláveis. Além disso, você já implementou os bônus como o endpoint `/usuarios/me` para retornar os dados do usuário autenticado e a filtragem simples em agentes e casos, o que mostra dedicação extra. Excelente! 👏
+Primeiramente, parabéns pelo esforço e pela estruturação do seu projeto! 🎉 Você organizou muito bem as pastas e arquivos, seguindo a arquitetura MVC, e implementou a maioria das funcionalidades essenciais para uma API REST segura com Node.js, Express e PostgreSQL. Além disso, notei que você conseguiu implementar corretamente o registro, login, logout, exclusão de usuário, e a proteção das rotas com JWT — isso é fantástico! 👏
 
----
-
-## O que está funcionando muito bem 👍
-
-- A estrutura geral do projeto está muito bem organizada, respeitando a arquitetura MVC e separando responsabilidades.
-- As rotas de autenticação (`/auth/register`, `/auth/login`, `/auth/logout`) estão implementadas corretamente com validação adequada.
-- O middleware de autenticação está fazendo a verificação do JWT e adicionando o usuário autenticado no `req.user`.
-- O uso do `bcryptjs` para hash das senhas e a validação rigorosa da senha no `authController` estão corretos.
-- A documentação no `INSTRUCTIONS.md` está clara, detalhada e cobre todos os passos para rodar o projeto e usar os endpoints.
-- Você implementou o blacklist de tokens para logout, o que é uma boa prática para invalidar tokens.
-- Os controllers de agentes e casos têm validações sólidas e mensagens de erro claras.
-- O JWT é gerado com segredo vindo da variável de ambiente e tem tempo de expiração configurável.
-- A filtragem simples por cargo, status, e busca por palavras-chave está presente, o que é um bônus importante.
+Também é digno de nota que você adicionou validações robustas para os dados de entrada, tanto para agentes, casos e usuários, o que é uma ótima prática para garantir a integridade e segurança da aplicação.
 
 ---
 
-## Pontos de atenção e melhorias para destravar tudo 🚨
+## 🚦 Pontos Positivos que Merecem Destaque
 
-### 1. **Erro ao criar usuário com email já em uso (Erro 400 esperado)**
+- **Arquitetura e Organização:**  
+  Você manteve uma estrutura limpa e organizada, com controllers, repositories, rotas e middlewares bem separados. Isso facilita a manutenção e escalabilidade do código.
 
-Você já faz a verificação correta no `authController.register`:
+- **Validação de Dados:**  
+  As funções de validação para os agentes, casos e usuários estão bem detalhadas e cobrem os requisitos, incluindo formatos, campos obrigatórios e regras específicas (como a senha).
+
+- **Autenticação e Segurança:**  
+  O uso do JWT com segredo armazenado na variável de ambiente (`process.env.JWT_SECRET`), o middleware de autenticação (`authMiddleware.js`) que verifica e invalida tokens na blacklist, e o hash de senha com bcrypt estão implementados corretamente.
+
+- **Documentação:**  
+  Você fez um excelente trabalho documentando os endpoints no Swagger e explicando no `INSTRUCTIONS.md` como usar a API, o que é fundamental para um projeto profissional.
+
+- **Funcionalidades Bônus:**  
+  Você implementou o endpoint `/auth/usuarios/me` para retornar os dados do usuário autenticado, o que é um plus para a experiência do usuário.
+
+---
+
+## 🔎 Análise dos Pontos de Melhoria — Onde Seu Código Pode Evoluir
+
+### 1. **Erro ao Criar Usuário com Email Já em Uso (Erro 400 esperado)**
+
+Você tem uma validação para verificar se o email já existe no banco:
 
 ```js
-const usuarioExistente = await usuariosRepository.findByEmail(email);
+const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
 if (usuarioExistente) {
     return res.status(400).json({
         status: 400,
@@ -44,183 +51,57 @@ if (usuarioExistente) {
 
 **Por que pode estar falhando?**
 
-- Confirme se a tabela `usuarios` realmente está criada e migrada corretamente. Seu arquivo de migration `20250821224959_create_usuarios_table.js` está correto, mas verifique se você rodou `npx knex migrate:latest` após criar essa migration.
-- Se a migration não foi aplicada, o banco não terá a tabela e isso pode causar erros.
-- Também, verifique se o email está sendo armazenado em caixa baixa, para evitar duplicidade por diferença de maiúsculas/minúsculas.
+- Pode ser que o banco não esteja aplicando a restrição de unicidade corretamente, ou que a migration não tenha sido aplicada (verifique se a migration que cria a tabela `usuarios` foi executada com sucesso).  
+- Também é importante garantir que o email seja sempre armazenado em minúsculas, o que você já faz na criação, mas certifique-se que no banco o índice único é case-insensitive (no PostgreSQL, `citext` pode ajudar, ou usar `lower(email)` no índice).  
+- Outra possibilidade é que o teste esteja enviando o email com espaços ou caracteres invisíveis, e sua validação não esteja normalizando isso.
 
-**Recomendação:**  
-Se ainda não fez, rode o reset do banco para garantir que a tabela `usuarios` existe:
-
-```bash
-npm run db:reset
-```
-
-E confira se os dados estão sendo inseridos corretamente.
-
-Além disso, para evitar problemas com case sensitivity, você pode normalizar o email para minúsculas antes de salvar e consultar:
+**Dica:** Verifique se sua migration está rodando sem erros e se o campo `email` tem a restrição `unique()`:
 
 ```js
-const emailLower = email.toLowerCase();
-const usuarioExistente = await usuariosRepository.findByEmail(emailLower);
-// E ao criar:
-const novoUsuario = await usuariosRepository.create({ nome, email: emailLower, senha });
+table.string('email', 150).notNullable().unique();
+```
+
+Se estiver tudo certo, tente adicionar um `trim()` no email antes de salvar e buscar:
+
+```js
+const emailNormalizado = email.trim().toLowerCase();
 ```
 
 ---
 
-### 2. **Resposta do login com campo `access_token` e não `acess_token`**
+### 2. **Falhas em Filtragem e Busca de Agentes e Casos**
 
-Na descrição do desafio, o token deve ser retornado com a chave `access_token` (com dois "c"):
+Você implementou filtros e ordenações nos endpoints de agentes e casos, o que é ótimo! Porém, alguns testes indicam que a filtragem por status, agente_id e busca por keywords podem não estar funcionando 100%.
 
-```json
-{
-  "access_token": "token aqui"
-}
-```
-
-No seu `authController.login`, está correto:
+Por exemplo, no arquivo `casosRepository.js`:
 
 ```js
-res.json({
-    access_token: token
-});
-```
-
-Mas no enunciado inicial do desafio, na parte de status codes, você colocou um exemplo com `acess_token` (um "c" só):
-
-```json
-{
-    acess_token: "token aqui"
+async function searchWithFilters({ agente_id, status, q }) {
+    return await db('casos')
+        .modify(function(queryBuilder) {
+            if (agente_id) {
+                queryBuilder.where('agente_id', agente_id);
+            }
+            if (status) {
+                queryBuilder.where('status', status.toLowerCase());
+            }
+            if (q) {
+                queryBuilder.where(function() {
+                    this.where('titulo', 'ilike', `%${q}%`)
+                        .orWhere('descricao', 'ilike', `%${q}%`);
+                });
+            }
+        });
 }
 ```
 
-Se algum teste usa esse nome errado, pode dar problema. Mas pelo seu código, está correto. Só fique atento para sempre usar `access_token`.
+**Possíveis melhorias:**
 
----
+- Certifique-se que o parâmetro `agente_id` seja validado para ser um número válido antes de passar para o banco, para evitar erros silenciosos ou comportamento inesperado.  
+- No filtro por `status`, você já chama `.toLowerCase()`, o que é bom, mas talvez o valor venha com espaços. Um `trim()` também ajuda aqui.  
+- Para a busca por `q`, seu uso do `ilike` está correto para PostgreSQL, mas cuidado com caracteres especiais que podem interferir na query.
 
-### 3. **Middleware de autenticação e proteção das rotas**
-
-Seu middleware `authMiddleware.js` está implementado corretamente, verificando o token, validando com o segredo do `.env` e buscando o usuário no banco. Isso é ótimo!
-
-```js
-const decoded = jwt.verify(token, process.env.JWT_SECRET);
-const usuario = await usuariosRepository.findById(decoded.id);
-if (!usuario) {
-    return res.status(401).json({
-        status: 401,
-        message: "Usuário não encontrado"
-    });
-}
-req.user = usuario;
-next();
-```
-
-**Sugestão:**  
-Para melhorar a performance, você pode armazenar no token o nome do usuário também e evitar a consulta no banco para cada requisição, mas sua forma atual é mais segura, pois garante que o usuário ainda existe.
-
----
-
-### 4. **Logout e blacklist de tokens**
-
-Você implementou um `Set` chamado `tokenBlacklist` para invalidar tokens no logout:
-
-```js
-const tokenBlacklist = new Set();
-
-async function logout(req, res) {
-    // Aqui deveria adicionar o token ao blacklist
-    // Mas no seu controller, não há essa lógica
-    res.json({
-        status: 200,
-        message: "Logout realizado com sucesso"
-    });
-}
-```
-
-**Problema:**  
-Você não está adicionando o token ao blacklist no logout, então o token continua válido mesmo após logout, o que quebra a segurança.
-
-**Como corrigir:**
-
-No seu `authController.logout`, receba o token do header e adicione ao blacklist:
-
-```js
-const authHeader = req.headers['authorization'];
-const token = authHeader && authHeader.split(' ')[1];
-
-if (token) {
-    tokenBlacklist.add(token);
-}
-res.json({
-    status: 200,
-    message: "Logout realizado com sucesso"
-});
-```
-
-Mas atenção: o `tokenBlacklist` está definido no middleware, e não é exportado para o controller. Para manter a arquitetura limpa, o ideal é criar um serviço para gerenciar o blacklist ou armazenar tokens inválidos em cache/DB.
-
-Para um projeto simples, você pode exportar o `tokenBlacklist` do middleware e importar no controller, mas cuidado com isso em produção.
-
----
-
-### 5. **Endpoint DELETE /auth/usuarios/:id**
-
-Seu controller `authController.deleteUser` está correto ao validar o ID e deletar o usuário:
-
-```js
-const usuario = await usuariosRepository.findById(id);
-if (!usuario) {
-    return res.status(404).json({
-        status: 404,
-        message: "Usuário não encontrado"
-    });
-}
-
-await usuariosRepository.deleteUser(id);
-
-res.status(204).end();
-```
-
-**Possível problema:**
-
-- Verifique se o usuário autenticado tem permissão para deletar o usuário indicado (por exemplo, só pode deletar a si mesmo ou administradores podem deletar qualquer um). Se não houver essa lógica, qualquer usuário autenticado pode deletar qualquer outro, o que pode ser um risco.
-
----
-
-### 6. **Validação da senha e campos extras**
-
-Sua validação no `authController` para registro está muito boa, inclusive rejeitando campos extras:
-
-```js
-const extraFields = Object.keys(body).filter(field => !allowedFields.includes(field));
-if (extraFields.length > 0) {
-    extraFields.forEach(field => {
-        errors.push(`Campo '${field}' não é permitido`);
-    });
-}
-```
-
-Isso ajuda a evitar dados inesperados no payload, o que é uma ótima prática.
-
----
-
-### 7. **Filtros e ordenação nas rotas de agentes e casos**
-
-Você implementou filtros e ordenação no `agentesController` e `casosController`. Isso é ótimo!
-
-Por exemplo, no `agentesController.getAllAgentes`:
-
-```js
-if (sort && !['dataDeIncorporacao', '-dataDeIncorporacao'].includes(sort)) {
-    return res.status(400).json({
-        status: 400,
-        message: "Parâmetros inválidos",
-        errors: ["O parâmetro 'sort' deve ser 'dataDeIncorporacao' ou '-dataDeIncorporacao'"]
-    });
-}
-```
-
-E no repository:
+No `agentesRepository.js`:
 
 ```js
 async function findFiltered({ cargo, sort } = {}) {
@@ -239,63 +120,105 @@ async function findFiltered({ cargo, sort } = {}) {
 }
 ```
 
-**Sugestão:**  
-Para garantir que a ordenação funcione mesmo quando o parâmetro vem com maiúsculas ou espaços, normalize o parâmetro `sort` antes de usar.
+Aqui, o filtro por `cargo` é feito com `ilike`, o que é bom, mas:
+
+- O parâmetro `cargo` pode estar vindo em maiúsculas/minúsculas variadas, então faça um `.toLowerCase()` antes de usar, para garantir que o filtro funcione.  
+- Além disso, o parâmetro `sort` aceita `dataDeIncorporacao` ou `-dataDeIncorporacao`, mas no controller você está validando isso. Certifique-se que o valor está exatamente nesses formatos.
 
 ---
 
-### 8. **Campos de data no banco**
+### 3. **Endpoint `/auth/usuarios/me` Retornando Dados Incompletos**
 
-Na migration `20250807024232_solution_migrations.js`, você criou a coluna `dataDeIncorporacao` como `date`:
+No `authController.js` você faz:
 
 ```js
-table.date('dataDeIncorporacao').notNullable();
+async function getMe(req, res) {
+    try {
+        res.json({
+            status: 200,
+            data: {
+                id: req.user.id,
+                nome: req.user.nome,
+                email: req.user.email,
+                created_at: req.user.created_at
+            }
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 500,
+            message: "Erro interno no servidor",
+            error: error.message
+        });
+    }
+}
 ```
 
-No seu controller, você valida a data no formato `YYYY-MM-DD`, o que está correto.
+O problema aqui é que o objeto `req.user` é preenchido no middleware de autenticação com os dados do usuário retornados pelo `usuariosRepository.findById(decoded.id)`, que seleciona apenas `id`, `nome`, `email` e `created_at`. Isso está correto, mas se em algum momento você precisar de mais campos, lembre-se de ajustar o select.
 
 ---
 
-### 9. **Recomendação geral para segurança**
+### 4. **Logout e Blacklist de Tokens**
 
-- Nunca exponha a senha do usuário em respostas JSON.
-- Você está retornando no registro o usuário com `id`, `nome`, `email` e `created_at`, o que está certo.
-- No endpoint `/usuarios/me`, você retorna os dados do usuário autenticado corretamente, mas lembre-se de não retornar a senha.
+Você implementou um conjunto (`Set`) para guardar tokens inválidos:
+
+```js
+const tokenBlacklist = new Set();
+
+async function logout(req, res) {
+    // ...
+    if (token) {
+        tokenBlacklist.add(token);
+    }
+    // ...
+}
+```
+
+Isso funciona bem para um servidor único, mas em ambientes com múltiplas instâncias (clusters, servidores em nuvem), essa blacklist em memória não será compartilhada. Para produção, considere usar um armazenamento centralizado (Redis, banco de dados).
 
 ---
 
-## Recursos para você aprofundar e corrigir os pontos acima 🚀
+### 5. **Recomendações Gerais para Melhorias**
 
-- Para entender melhor a autenticação JWT e práticas de segurança, recomendo fortemente este vídeo, feito pelos meus criadores, que fala muito bem sobre o tema:  
+- **Normalização de Inputs:** Sempre normalize os dados de entrada (trim, lowercase para emails, etc). Isso evita problemas sutis com comparação e armazenamento.  
+- **Tratamento de Erros:** Seu middleware de erros (`errorHandler.js`) está configurado? Certifique-se que ele captura erros não tratados para evitar que a API retorne respostas genéricas ou crash.  
+- **Testes de Segurança:** Revise se as senhas estão sendo armazenadas com bcrypt e se o hash está sendo aplicado no repositório (vi que está correto em `usuariosRepository.js`).  
+- **Variáveis de Ambiente:** Garanta que o `.env` esteja corretamente configurado e que o segredo JWT seja suficientemente forte e não esteja hardcoded no código.
+
+---
+
+## 📚 Recursos para Aprofundar e Corrigir
+
+- Para entender melhor o uso do **Knex.js** e como fazer queries com filtros e ordenações, recomendo este vídeo:  
+  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+
+- Para aprimorar a **autenticação com JWT** e entender as boas práticas, este vídeo feito pelos meus criadores é excelente:  
   https://www.youtube.com/watch?v=Q4LQOfYwujk
 
-- Para trabalhar com JWT na prática e evitar erros comuns:  
-  https://www.youtube.com/watch?v=keS0JWOypIU
-
-- Para implementar hashing de senhas com bcrypt e entender melhor a segurança envolvida:  
+- Para dominar o hashing e ver JWT na prática, veja:  
   https://www.youtube.com/watch?v=L04Ln97AwoY
 
-- Se quiser garantir que suas migrations e seeds estão funcionando corretamente, este vídeo do Knex é excelente:  
-  https://www.youtube.com/watch?v=dXWy_aGCW1E
+- Se quiser revisar a configuração do banco com Docker e Knex, este vídeo ajuda muito:  
+  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
+
+- Para aprender mais sobre organização de projetos Node.js com MVC, este vídeo é uma ótima referência:  
+  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
 
 ---
 
-## Resumo rápido dos principais pontos para focar 👀
+## 📝 Resumo Rápido dos Pontos para Focar
 
-- **Certifique-se de que a migration da tabela `usuarios` foi aplicada corretamente.** Rode o reset do banco para garantir.
-- **Normalize o email para minúsculas antes de salvar e consultar no banco** para evitar duplicidades.
-- **No logout, adicione o token ao blacklist para invalidar o JWT.** Ajuste a arquitetura para compartilhar o blacklist entre middleware e controller.
-- **Verifique permissões para o endpoint de exclusão de usuários**, para evitar que usuários deletem outros indevidamente.
-- **Mantenha a consistência do nome do campo `access_token` no login.**
-- **Continue validando rigorosamente os dados de entrada, como já está fazendo, para evitar dados inválidos ou maliciosos.**
-- **Aprimore a filtragem e ordenação tratando possíveis variações de caixa e espaços.**
-- **Não retorne senhas em nenhuma resposta JSON.**
+- ✅ Confirme que a migration da tabela `usuarios` foi aplicada corretamente com a restrição `unique` no campo `email`.  
+- ✅ Normalize os campos de entrada, especialmente o email, com `trim()` e `toLowerCase()` antes de validar ou salvar.  
+- ✅ Valide os filtros e parâmetros de consulta para agentes e casos para garantir que estejam corretos e não causem falhas silenciosas.  
+- ✅ Considere a escalabilidade da blacklist de tokens para logout em ambientes de múltiplos servidores.  
+- ✅ Garanta que o middleware de autenticação está sempre adicionando o usuário correto no `req.user` para endpoints que dependem disso.  
+- ✅ Mantenha a documentação atualizada e clara para facilitar o uso da API por outros desenvolvedores e clientes.
 
 ---
 
-Matheus, seu código mostra que você já domina muitos conceitos importantes de segurança e organização de APIs. Com alguns ajustes finos, seu projeto vai ficar impecável e pronto para produção! Continue assim, estudando e aplicando boas práticas. Estou aqui para ajudar sempre que precisar! 🚀💪
+Matheus, você está no caminho certo e sua aplicação já está bem estruturada e funcional! 💪 Continue revisando esses detalhes para deixar seu projeto ainda mais robusto e profissional. Se precisar de ajuda para entender algum conceito, não hesite em voltar aqui! 😉
 
-Um abraço de Code Buddy! 🤖✨
+Abraços e sucesso na sua jornada de aprendizado! 🚓✨
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
