@@ -5,15 +5,22 @@ async function create(usuario) {
     const { senha, ...dados } = usuario;
     const senhaHash = await bcrypt.hash(senha, 12);
     
+    const dadosNormalizados = {
+        ...dados,
+        email: dados.email.toLowerCase(),
+        senha: senhaHash
+    };
+    
     const [novoUsuario] = await db('usuarios')
-        .insert({ ...dados, senha: senhaHash })
+        .insert(dadosNormalizados)
         .returning(['id', 'nome', 'email', 'created_at']);
     
     return novoUsuario;
 }
 
 async function findByEmail(email) {
-    return await db('usuarios').where({ email }).first();
+    const emailNormalizado = email.toLowerCase();
+    return await db('usuarios').where('email', emailNormalizado).first();
 }
 
 async function findById(id) {

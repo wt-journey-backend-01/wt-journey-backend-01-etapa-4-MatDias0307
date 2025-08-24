@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const usuariosRepository = require('../repositories/usuariosRepository');
+const { tokenBlacklist } = require('../middlewares/authMiddleware'); // Importa a blacklist compartilhada
 
 function validateId(id) {
     const numId = parseInt(id, 10);
@@ -60,7 +61,9 @@ async function register(req, res) {
 
         const { nome, email, senha } = req.body;
 
-        const usuarioExistente = await usuariosRepository.findByEmail(email);
+        const emailNormalizado = email.toLowerCase();
+
+        const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
         if (usuarioExistente) {
             return res.status(400).json({
                 status: 400,
@@ -68,7 +71,11 @@ async function register(req, res) {
             });
         }
 
-        const novoUsuario = await usuariosRepository.create({ nome, email, senha });
+        const novoUsuario = await usuariosRepository.create({ 
+            nome, 
+            email: emailNormalizado, 
+            senha 
+        });
         
         res.status(201).json({
             status: 201,
@@ -100,7 +107,9 @@ async function login(req, res) {
             });
         }
 
-        const usuario = await usuariosRepository.findByEmail(email);
+        const emailNormalizado = email.toLowerCase();
+        const usuario = await usuariosRepository.findByEmail(emailNormalizado);
+        
         if (!usuario) {
             return res.status(401).json({
                 status: 401,
@@ -135,20 +144,42 @@ async function login(req, res) {
 }
 
 async function logout(req, res) {
-    res.json({
-        status: 200,
-        message: "Logout realizado com sucesso"
-    });
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        
+        if (token) {
+            tokenBlacklist.add(token);
+        }
+        
+        res.json({
+            status: 200,
+            message: "Logout realizado com sucesso"
+        });
+    } catch (error) {
+        res.status(500).json({
+            status: 500,
+            message: "Erro interno no servidor",
+            error: error.message
+        });
+    }
 }
 
 async function deleteUser(req, res) {
     try {
         const { id } = req.params;
 
-        if (!validateId(req.params.id)) {
+        if (!validateId(id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
+            });
+        }
+
+        if (parseInt(id) !== req.user.id) {
+            return res.status(403).json({
+                status: 403,
+                message: "Permissão negada: você só pode excluir sua própria conta"
             });
         }
         
