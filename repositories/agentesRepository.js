@@ -49,7 +49,7 @@ async function findFiltered({ cargo, sort } = {}) {
 
   if (cargo) {
     const cargoLower = cargo.toLowerCase();
-    qb.whereRaw('LOWER(cargo) ILIKE ?', [`%${cargoLower}%`]);
+    qb.whereRaw('LOWER(cargo) = ?', [cargoLower]);
   }
 
   if (sort) {

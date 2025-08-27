@@ -137,7 +137,18 @@ async function createCaso(req, res) {
         }
 
         const novoCaso = await casosRepository.create(req.body);
-        res.status(201).json(novoCaso);
+
+        res.status(201).json({
+            status: 201,
+            message: "Caso criado com sucesso",
+            data: {
+                id: novoCaso.id,
+                titulo: novoCaso.titulo,
+                descricao: novoCaso.descricao,
+                status: novoCaso.status,
+                agente_id: novoCaso.agente_id
+            }
+        });
     } catch (error) {
         res.status(500).json({ 
             status: 500,

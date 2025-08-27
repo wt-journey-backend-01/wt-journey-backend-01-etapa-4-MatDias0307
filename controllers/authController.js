@@ -84,7 +84,7 @@ async function register(req, res) {
                 id: novoUsuario.id,
                 nome: novoUsuario.nome,
                 email: novoUsuario.email,
-                created_at: novoUsuario.created_at
+                created_at: novoUsuario.created_at.toISOString()
             }
         });
     } catch (error) {
@@ -211,7 +211,7 @@ async function getMe(req, res) {
                 id: req.user.id,
                 nome: req.user.nome,
                 email: req.user.email,
-                created_at: req.user.created_at
+                created_at: req.user.created_at ? req.user.created_at.toISOString() : null
             }
         });
     } catch (error) {
