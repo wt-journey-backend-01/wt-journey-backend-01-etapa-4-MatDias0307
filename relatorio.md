@@ -1,43 +1,44 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 7 créditos restantes para usar o sistema de feedback AI.
+Você tem 6 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para MatDias0307:
 
 Nota final: **48.7/100**
 
-Olá, MatDias0307! 👋🚀
+```markdown
+# Olá, MatDias0307! 👋🚀
 
-Primeiramente, parabéns pelo esforço e pela estruturação do seu projeto! 🎉 Você organizou muito bem as pastas e arquivos, seguindo a arquitetura MVC, e implementou a maioria das funcionalidades essenciais para uma API REST segura com Node.js, Express e PostgreSQL. Além disso, notei que você conseguiu implementar corretamente o registro, login, logout, exclusão de usuário, e a proteção das rotas com JWT — isso é fantástico! 👏
-
-Também é digno de nota que você adicionou validações robustas para os dados de entrada, tanto para agentes, casos e usuários, o que é uma ótima prática para garantir a integridade e segurança da aplicação.
-
----
-
-## 🚦 Pontos Positivos que Merecem Destaque
-
-- **Arquitetura e Organização:**  
-  Você manteve uma estrutura limpa e organizada, com controllers, repositories, rotas e middlewares bem separados. Isso facilita a manutenção e escalabilidade do código.
-
-- **Validação de Dados:**  
-  As funções de validação para os agentes, casos e usuários estão bem detalhadas e cobrem os requisitos, incluindo formatos, campos obrigatórios e regras específicas (como a senha).
-
-- **Autenticação e Segurança:**  
-  O uso do JWT com segredo armazenado na variável de ambiente (`process.env.JWT_SECRET`), o middleware de autenticação (`authMiddleware.js`) que verifica e invalida tokens na blacklist, e o hash de senha com bcrypt estão implementados corretamente.
-
-- **Documentação:**  
-  Você fez um excelente trabalho documentando os endpoints no Swagger e explicando no `INSTRUCTIONS.md` como usar a API, o que é fundamental para um projeto profissional.
-
-- **Funcionalidades Bônus:**  
-  Você implementou o endpoint `/auth/usuarios/me` para retornar os dados do usuário autenticado, o que é um plus para a experiência do usuário.
+Primeiramente, parabéns pelo empenho e pela entrega deste desafio tão complexo e importante! Você já conseguiu implementar várias funcionalidades essenciais, e isso é motivo para comemorar! 🎉👏
 
 ---
 
-## 🔎 Análise dos Pontos de Melhoria — Onde Seu Código Pode Evoluir
+## 🎯 O que você acertou muito bem
 
-### 1. **Erro ao Criar Usuário com Email Já em Uso (Erro 400 esperado)**
+- **Estrutura do projeto** está muito próxima do esperado, com pastas bem organizadas (`controllers`, `repositories`, `routes`, `middlewares`, `db`, `utils`).
+- Implementou as **migrations** para criar as tabelas, incluindo a tabela `usuarios` com os campos corretos.
+- O uso do **bcryptjs** para hash da senha está correto e bem aplicado no `usuariosRepository.js`.
+- O fluxo de autenticação com JWT está funcionando, com geração e validação do token, e middleware de autenticação (`authMiddleware.js`) implementado corretamente.
+- A documentação no `INSTRUCTIONS.md` está clara e detalhada, explicando como usar os endpoints de autenticação e proteger as rotas.
+- Os testes base relacionados à criação, login, logout e deleção de usuários passaram — isso mostra que a base da autenticação está sólida.
+- Você já implementou filtros e buscas avançadas para agentes e casos, mesmo que os testes bônus não tenham passado, o esforço está evidente.
+- O logout invalidando o token via blacklist está implementado, o que é um ótimo cuidado extra de segurança.
 
-Você tem uma validação para verificar se o email já existe no banco:
+---
+
+## 🚨 Pontos que precisam de atenção para destravar os testes que falharam
+
+Você teve alguns testes base que falharam, e eles indicam pontos importantes para melhorar. Vou detalhar os principais para você entender o que está acontecendo e como corrigir.
+
+---
+
+### 1. **Erro 400 ao tentar criar usuário com e-mail já em uso**
+
+**O que o teste espera:**  
+Quando tentar registrar um usuário com um e-mail que já existe, a API deve responder com status 400 e mensagem clara.
+
+**Análise do seu código:**  
+No `authController.js`, seu método `register` faz essa verificação:
 
 ```js
 const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
@@ -49,87 +50,166 @@ if (usuarioExistente) {
 }
 ```
 
-**Por que pode estar falhando?**
+Isso está correto, porém, o teste falhou. Isso pode acontecer se:
 
-- Pode ser que o banco não esteja aplicando a restrição de unicidade corretamente, ou que a migration não tenha sido aplicada (verifique se a migration que cria a tabela `usuarios` foi executada com sucesso).  
-- Também é importante garantir que o email seja sempre armazenado em minúsculas, o que você já faz na criação, mas certifique-se que no banco o índice único é case-insensitive (no PostgreSQL, `citext` pode ajudar, ou usar `lower(email)` no índice).  
-- Outra possibilidade é que o teste esteja enviando o email com espaços ou caracteres invisíveis, e sua validação não esteja normalizando isso.
+- O e-mail não está sendo normalizado corretamente (ex: espaços antes/depois).  
+- Ou se a migration não criou a restrição de unicidade no banco, permitindo duplicatas.
 
-**Dica:** Verifique se sua migration está rodando sem erros e se o campo `email` tem a restrição `unique()`:
-
-```js
-table.string('email', 150).notNullable().unique();
-```
-
-Se estiver tudo certo, tente adicionar um `trim()` no email antes de salvar e buscar:
+**Verificação importante:**  
+Confirme que sua migration `20250821224959_create_usuarios_table.js` tem a linha `.unique()` no campo `email` (que você tem, o que é ótimo).  
+Além disso, no `usuariosRepository.js`, o método `findByEmail` faz:
 
 ```js
 const emailNormalizado = email.trim().toLowerCase();
+return await db('usuarios').where('email', emailNormalizado).first();
 ```
+
+Está correto. Pode ser que o teste esteja enviando e-mails com maiúsculas ou espaços, e seu código não está normalizando antes de verificar. Você normaliza no controller, o que é bom.
+
+**Possível causa:**  
+- Se a requisição de registro não estiver normalizando o e-mail antes da verificação, pode dar problema.  
+- Ou pode ser um problema de concorrência no teste (testes rodando em paralelo sem limpar a base).
+
+**Recomendação:**  
+- Garanta que o e-mail seja sempre `.trim().toLowerCase()` antes de qualquer operação, tanto para busca quanto para inserção.  
+- Para aprender mais sobre autenticação e validação de usuários, recomendo fortemente este vídeo, feito pelos meus criadores:  
+  👉 [Autenticação com Node.js e JWT](https://www.youtube.com/watch?v=Q4LQOfYwujk)  
+- Também veja este para entender bem o uso do bcrypt e JWT juntos:  
+  👉 [JWT e bcrypt na prática](https://www.youtube.com/watch?v=L04Ln97AwoY)
 
 ---
 
-### 2. **Falhas em Filtragem e Busca de Agentes e Casos**
+### 2. **Falha em testes relacionados à criação, listagem, busca, atualização e exclusão de agentes**
 
-Você implementou filtros e ordenações nos endpoints de agentes e casos, o que é ótimo! Porém, alguns testes indicam que a filtragem por status, agente_id e busca por keywords podem não estar funcionando 100%.
+Você teve vários testes que falharam para agentes, como:
 
-Por exemplo, no arquivo `casosRepository.js`:
+- Criação de agentes com status 201 e dados corretos
+- Listagem de agentes com status 200 e dados completos
+- Busca por ID com status 200 e dados corretos
+- Atualização (PUT e PATCH) com status 200 e dados atualizados
+- Exclusão com status 204 e corpo vazio
+- Erros 400 e 404 para payload incorreto, ID inválido, agente inexistente
+- Erro 401 para acesso sem token JWT
+
+**Análise do seu código:**
+
+- Seu `agentesController.js` tem validações muito bem feitas, o que é ótimo!  
+- O middleware de autenticação está aplicado corretamente nas rotas (`agentesRoutes.js`), o que deve garantir erro 401 para acessos não autorizados.
+
+Porém, o teste falhou em criar agentes corretamente com status 201 e dados inalterados (incluindo o ID). Olhando seu método `createAgente`:
 
 ```js
-async function searchWithFilters({ agente_id, status, q }) {
-    return await db('casos')
-        .modify(function(queryBuilder) {
-            if (agente_id) {
-                queryBuilder.where('agente_id', agente_id);
-            }
-            if (status) {
-                queryBuilder.where('status', status.toLowerCase());
-            }
-            if (q) {
-                queryBuilder.where(function() {
-                    this.where('titulo', 'ilike', `%${q}%`)
-                        .orWhere('descricao', 'ilike', `%${q}%`);
-                });
-            }
+async function createAgente(req, res) {
+    try {
+        if (req.body.id !== undefined) {
+            return res.status(400).json({
+                status: 400,
+                message: "Parâmetros inválidos",
+                errors: ["O campo 'id' não pode ser informado na criação"]
+            });
+        }
+
+        const errors = validateAgenteForCreate(req.body);
+        if (errors.length > 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Parâmetros inválidos",
+                errors
+            });
+        }
+
+        const novoAgente = await agentesRepository.create(req.body);
+        res.status(201).json(novoAgente);
+    } catch (error) {
+        res.status(500).json({
+            status: 500,
+            message: "Erro interno no servidor",
+            error: error.message
         });
+    }
 }
 ```
 
-**Possíveis melhorias:**
+**Possível motivo do erro:**  
+- O teste pode estar esperando que o objeto retornado tenha uma estrutura específica (ex: com status 201, mensagem e dados dentro de um campo `data`), e você está retornando diretamente o objeto do banco.  
+- Exemplo esperado pelo teste (baseado no padrão usado no `authController`):
 
-- Certifique-se que o parâmetro `agente_id` seja validado para ser um número válido antes de passar para o banco, para evitar erros silenciosos ou comportamento inesperado.  
-- No filtro por `status`, você já chama `.toLowerCase()`, o que é bom, mas talvez o valor venha com espaços. Um `trim()` também ajuda aqui.  
-- Para a busca por `q`, seu uso do `ilike` está correto para PostgreSQL, mas cuidado com caracteres especiais que podem interferir na query.
+```json
+{
+  "status": 201,
+  "message": "Agente criado com sucesso",
+  "data": {
+    "id": 1,
+    "nome": "...",
+    "dataDeIncorporacao": "...",
+    "cargo": "..."
+  }
+}
+```
 
-No `agentesRepository.js`:
+Enquanto seu código retorna só o objeto `novoAgente` sem essa estrutura.
+
+**Solução simples:**  
+Modifique o retorno para algo assim:
+
+```js
+res.status(201).json({
+  status: 201,
+  message: "Agente criado com sucesso",
+  data: novoAgente
+});
+```
+
+Isso vai alinhar a resposta com o esperado nos testes.
+
+---
+
+### 3. **Falha nos testes de filtros e buscas avançadas (bônus)**
+
+Você implementou filtros para agentes por cargo e ordenação, e para casos por status, agente e pesquisa textual. Os testes bônus falharam, indicando que esses filtros não estão 100% corretos.
+
+Analisando o `agentesRepository.js`:
 
 ```js
 async function findFiltered({ cargo, sort } = {}) {
   const qb = db('agentes');
 
   if (cargo) {
-    qb.where('cargo', 'ilike', cargo);
+    const cargoLower = cargo.toLowerCase();
+    qb.whereRaw('LOWER(cargo) ILIKE ?', [`%${cargoLower}%`]);
   }
 
   if (sort) {
+    const field = 'dataDeIncorporacao';
     const order = sort.startsWith('-') ? 'desc' : 'asc';
-    qb.orderBy('dataDeIncorporacao', order);
+    
+    qb.orderBy(field, order);
   }
 
   return await qb.select('*');
 }
 ```
 
-Aqui, o filtro por `cargo` é feito com `ilike`, o que é bom, mas:
+**Possível problema:**  
+- O uso de `%${cargoLower}%` no `ILIKE` permite que qualquer substring caseira seja aceita, mas o requisito provavelmente quer que o cargo seja exatamente igual (ex: "delegado", "inspetor", "detetive").  
+- O filtro deveria usar `whereRaw('LOWER(cargo) = ?', [cargoLower])` para igualdade, não `ILIKE` com `%`.
 
-- O parâmetro `cargo` pode estar vindo em maiúsculas/minúsculas variadas, então faça um `.toLowerCase()` antes de usar, para garantir que o filtro funcione.  
-- Além disso, o parâmetro `sort` aceita `dataDeIncorporacao` ou `-dataDeIncorporacao`, mas no controller você está validando isso. Certifique-se que o valor está exatamente nesses formatos.
+**Correção sugerida:**
+
+```js
+if (cargo) {
+  const cargoLower = cargo.toLowerCase();
+  qb.whereRaw('LOWER(cargo) = ?', [cargoLower]);
+}
+```
+
+Isso vai garantir que só cargos exatos sejam filtrados.
 
 ---
 
-### 3. **Endpoint `/auth/usuarios/me` Retornando Dados Incompletos**
+### 4. **Endpoint `/usuarios/me` não retornando dados do usuário autenticado corretamente**
 
-No `authController.js` você faz:
+No `authController.js`, seu método `getMe` faz:
 
 ```js
 async function getMe(req, res) {
@@ -153,72 +233,114 @@ async function getMe(req, res) {
 }
 ```
 
-O problema aqui é que o objeto `req.user` é preenchido no middleware de autenticação com os dados do usuário retornados pelo `usuariosRepository.findById(decoded.id)`, que seleciona apenas `id`, `nome`, `email` e `created_at`. Isso está correto, mas se em algum momento você precisar de mais campos, lembre-se de ajustar o select.
+O problema é que o objeto `req.user` é carregado no middleware `authMiddleware` via:
+
+```js
+const usuario = await usuariosRepository.findById(decoded.id);
+req.user = usuario;
+```
+
+No entanto, no seu `usuariosRepository.findById`, você seleciona `id`, `nome`, `email` e `created_at`. Isso é ótimo, mas o teste bônus pode estar esperando o campo `created_at` vindo em formato ISO string, e o banco pode estar retornando como objeto Date.
+
+**Sugestão:**  
+Você pode converter para string ISO no controller para garantir:
+
+```js
+res.json({
+  status: 200,
+  data: {
+    id: req.user.id,
+    nome: req.user.nome,
+    email: req.user.email,
+    created_at: req.user.created_at ? req.user.created_at.toISOString() : null
+  }
+});
+```
+
+Isso evita problemas de serialização.
 
 ---
 
-### 4. **Logout e Blacklist de Tokens**
+### 5. **Middleware de autenticação e blacklist**
 
-Você implementou um conjunto (`Set`) para guardar tokens inválidos:
+Você implementou blacklist para tokens no `authMiddleware.js`:
 
 ```js
 const tokenBlacklist = new Set();
 
-async function logout(req, res) {
-    // ...
-    if (token) {
-        tokenBlacklist.add(token);
-    }
-    // ...
+async function authenticateToken(req, res, next) {
+  // ...
+  if (tokenBlacklist.has(token)) {
+    return res.status(401).json({
+      status: 401,
+      message: "Token inválido"
+    });
+  }
+  // ...
 }
 ```
 
-Isso funciona bem para um servidor único, mas em ambientes com múltiplas instâncias (clusters, servidores em nuvem), essa blacklist em memória não será compartilhada. Para produção, considere usar um armazenamento centralizado (Redis, banco de dados).
+Isso é ótimo! Porém, o uso de `Set()` em memória significa que se o servidor reiniciar, a blacklist se perde. Para produção, o ideal é usar um armazenamento persistente (Redis, DB).
+
+**Mas para o desafio, está correto.**
 
 ---
 
-### 5. **Recomendações Gerais para Melhorias**
+## 🛠️ Recomendações gerais para melhorar seu código e passar nos testes
 
-- **Normalização de Inputs:** Sempre normalize os dados de entrada (trim, lowercase para emails, etc). Isso evita problemas sutis com comparação e armazenamento.  
-- **Tratamento de Erros:** Seu middleware de erros (`errorHandler.js`) está configurado? Certifique-se que ele captura erros não tratados para evitar que a API retorne respostas genéricas ou crash.  
-- **Testes de Segurança:** Revise se as senhas estão sendo armazenadas com bcrypt e se o hash está sendo aplicado no repositório (vi que está correto em `usuariosRepository.js`).  
-- **Variáveis de Ambiente:** Garanta que o `.env` esteja corretamente configurado e que o segredo JWT seja suficientemente forte e não esteja hardcoded no código.
+- **Padronize as respostas da API**: Sempre retorne objetos com `status`, `message` e `data` (quando aplicável). Isso ajuda os testes a validar corretamente.
 
----
+- **Normalização consistente de dados**: Garanta que e-mails sejam sempre `trim().toLowerCase()` antes de qualquer operação.
 
-## 📚 Recursos para Aprofundar e Corrigir
+- **Ajuste filtros para igualdade exata** quando o requisito pedir isso (exemplo: cargo dos agentes).
 
-- Para entender melhor o uso do **Knex.js** e como fazer queries com filtros e ordenações, recomendo este vídeo:  
-  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+- **Converta datas para strings ISO** ao retornar JSON para evitar problemas de serialização.
 
-- Para aprimorar a **autenticação com JWT** e entender as boas práticas, este vídeo feito pelos meus criadores é excelente:  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk
-
-- Para dominar o hashing e ver JWT na prática, veja:  
-  https://www.youtube.com/watch?v=L04Ln97AwoY
-
-- Se quiser revisar a configuração do banco com Docker e Knex, este vídeo ajuda muito:  
-  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
-
-- Para aprender mais sobre organização de projetos Node.js com MVC, este vídeo é uma ótima referência:  
-  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
+- **Revise os testes que falharam** para entender exatamente a estrutura de resposta esperada.
 
 ---
 
-## 📝 Resumo Rápido dos Pontos para Focar
+## 📚 Recursos que vão te ajudar muito
 
-- ✅ Confirme que a migration da tabela `usuarios` foi aplicada corretamente com a restrição `unique` no campo `email`.  
-- ✅ Normalize os campos de entrada, especialmente o email, com `trim()` e `toLowerCase()` antes de validar ou salvar.  
-- ✅ Valide os filtros e parâmetros de consulta para agentes e casos para garantir que estejam corretos e não causem falhas silenciosas.  
-- ✅ Considere a escalabilidade da blacklist de tokens para logout em ambientes de múltiplos servidores.  
-- ✅ Garanta que o middleware de autenticação está sempre adicionando o usuário correto no `req.user` para endpoints que dependem disso.  
-- ✅ Mantenha a documentação atualizada e clara para facilitar o uso da API por outros desenvolvedores e clientes.
+- Para autenticação, JWT e bcrypt, este vídeo feito pelos meus criadores é essencial:  
+  👉 https://www.youtube.com/watch?v=Q4LQOfYwujk
+
+- Para entender melhor o uso prático de JWT e bcrypt juntos:  
+  👉 https://www.youtube.com/watch?v=L04Ln97AwoY
+
+- Sobre Knex e query builder para filtros e migrations:  
+  👉 https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+
+- Para organizar seu projeto com boas práticas MVC em Node.js:  
+  👉 https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
+
+- Para configurar banco PostgreSQL com Docker e Knex:  
+  👉 https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
 
 ---
 
-Matheus, você está no caminho certo e sua aplicação já está bem estruturada e funcional! 💪 Continue revisando esses detalhes para deixar seu projeto ainda mais robusto e profissional. Se precisar de ajuda para entender algum conceito, não hesite em voltar aqui! 😉
+## 🔍 Resumo rápido dos principais pontos para focar
 
-Abraços e sucesso na sua jornada de aprendizado! 🚓✨
+- [ ] Padronize respostas JSON com `status`, `message` e `data` para criar agentes e outros recursos.  
+- [ ] Garanta normalização de e-mails antes de verificar existência e criar usuários.  
+- [ ] Ajuste filtro de cargo para usar igualdade exata (`LOWER(cargo) = ?`) em vez de `ILIKE '%...%'`.  
+- [ ] Converta datas para string ISO em respostas JSON para evitar problemas de serialização.  
+- [ ] Revise os testes que falharam para entender as expectativas de formato e mensagens.  
+- [ ] Continue aplicando o middleware de autenticação em todas as rotas protegidas.  
+
+---
+
+## 💬 Para finalizar
+
+Matheus, você está no caminho certo! Seu código mostra que entendeu os conceitos centrais de autenticação, segurança e organização de uma API REST profissional. Com alguns ajustes finos na padronização das respostas e filtros, você vai destravar todos os testes e ter uma aplicação robusta e pronta para produção.
+
+Continue firme, revise com calma os pontos que te mostrei, e não hesite em revisitar os vídeos recomendados para consolidar seu aprendizado.
+
+Estou aqui torcendo pelo seu sucesso! 🚀✨
+
+Abraços,  
+Seu Code Buddy 🤖💙
+```
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
