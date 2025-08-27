@@ -30,18 +30,25 @@ async function remove(id) {
 }
 
 async function searchWithFilters({ agente_id, status, q }) {
+    const validAgenteId = agente_id && !isNaN(Number(agente_id)) ? Number(agente_id) : null;
+
+    const cleanStatus = status ? status.trim().toLowerCase() : null;
+
+    const cleanQuery = q ? q.trim() : null;
+    
     return await db('casos')
         .modify(function(queryBuilder) {
-            if (agente_id) {
-                queryBuilder.where('agente_id', agente_id);
+            if (validAgenteId !== null) {
+                queryBuilder.where('agente_id', validAgenteId);
             }
-            if (status) {
-                queryBuilder.where('status', status.toLowerCase());
+            if (cleanStatus) {
+                queryBuilder.where('status', cleanStatus);
             }
-            if (q) {
+            if (cleanQuery) {
+                const escapedQuery = cleanQuery.replace(/[%_]/g, '\\$&');
                 queryBuilder.where(function() {
-                    this.where('titulo', 'ilike', `%${q}%`)
-                        .orWhere('descricao', 'ilike', `%${q}%`);
+                    this.where('titulo', 'ilike', `%${escapedQuery}%`)
+                        .orWhere('descricao', 'ilike', `%${escapedQuery}%`);
                 });
             }
         });

@@ -48,12 +48,15 @@ async function findFiltered({ cargo, sort } = {}) {
   const qb = db('agentes');
 
   if (cargo) {
-    qb.where('cargo', 'ilike', cargo);
+    const cargoLower = cargo.toLowerCase();
+    qb.whereRaw('LOWER(cargo) ILIKE ?', [`%${cargoLower}%`]);
   }
 
   if (sort) {
+    const field = 'dataDeIncorporacao';
     const order = sort.startsWith('-') ? 'desc' : 'asc';
-    qb.orderBy('dataDeIncorporacao', order);
+    
+    qb.orderBy(field, order);
   }
 
   return await qb.select('*');

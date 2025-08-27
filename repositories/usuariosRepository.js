@@ -19,7 +19,7 @@ async function create(usuario) {
 }
 
 async function findByEmail(email) {
-    const emailNormalizado = email.toLowerCase();
+    const emailNormalizado = email.trim().toLowerCase();
     return await db('usuarios').where('email', emailNormalizado).first();
 }
 

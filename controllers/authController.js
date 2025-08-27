@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const usuariosRepository = require('../repositories/usuariosRepository');
-const { tokenBlacklist } = require('../middlewares/authMiddleware'); // Importa a blacklist compartilhada
+const { tokenBlacklist } = require('../middlewares/authMiddleware');
 
 function validateId(id) {
     const numId = parseInt(id, 10);
@@ -61,7 +61,7 @@ async function register(req, res) {
 
         const { nome, email, senha } = req.body;
 
-        const emailNormalizado = email.toLowerCase();
+        const emailNormalizado = email.trim().toLowerCase();
 
         const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
         if (usuarioExistente) {
@@ -107,7 +107,7 @@ async function login(req, res) {
             });
         }
 
-        const emailNormalizado = email.toLowerCase();
+        const emailNormalizado = email.trim().toLowerCase();
         const usuario = await usuariosRepository.findByEmail(emailNormalizado);
         
         if (!usuario) {
