@@ -1,44 +1,42 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 6 créditos restantes para usar o sistema de feedback AI.
+Você tem 5 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para MatDias0307:
 
 Nota final: **48.7/100**
 
 ```markdown
-# Olá, MatDias0307! 👋🚀
+# Olá, MatDias0307! 🚀
 
-Primeiramente, parabéns pelo empenho e pela entrega deste desafio tão complexo e importante! Você já conseguiu implementar várias funcionalidades essenciais, e isso é motivo para comemorar! 🎉👏
-
----
-
-## 🎯 O que você acertou muito bem
-
-- **Estrutura do projeto** está muito próxima do esperado, com pastas bem organizadas (`controllers`, `repositories`, `routes`, `middlewares`, `db`, `utils`).
-- Implementou as **migrations** para criar as tabelas, incluindo a tabela `usuarios` com os campos corretos.
-- O uso do **bcryptjs** para hash da senha está correto e bem aplicado no `usuariosRepository.js`.
-- O fluxo de autenticação com JWT está funcionando, com geração e validação do token, e middleware de autenticação (`authMiddleware.js`) implementado corretamente.
-- A documentação no `INSTRUCTIONS.md` está clara e detalhada, explicando como usar os endpoints de autenticação e proteger as rotas.
-- Os testes base relacionados à criação, login, logout e deleção de usuários passaram — isso mostra que a base da autenticação está sólida.
-- Você já implementou filtros e buscas avançadas para agentes e casos, mesmo que os testes bônus não tenham passado, o esforço está evidente.
-- O logout invalidando o token via blacklist está implementado, o que é um ótimo cuidado extra de segurança.
+Antes de tudo, parabéns pelo empenho e pelo código que você enviou! 🎉 Você conseguiu implementar várias funcionalidades importantes, como o registro, login, logout, exclusão de usuários, além da proteção das rotas com JWT e a organização clara do projeto seguindo a arquitetura MVC. Isso já é uma grande conquista! 👏
 
 ---
 
-## 🚨 Pontos que precisam de atenção para destravar os testes que falharam
+## 🎯 Pontos Fortes que Merecem Destaque
 
-Você teve alguns testes base que falharam, e eles indicam pontos importantes para melhorar. Vou detalhar os principais para você entender o que está acontecendo e como corrigir.
+- **Estrutura do projeto bem organizada:** você seguiu muito bem o padrão com pastas para controllers, repositories, routes, middlewares e utils. Isso facilita muito a manutenção e escalabilidade.
+- **Autenticação JWT funcionando:** o login retorna o token com expiração e o middleware valida corretamente, incluindo blacklist para logout.
+- **Validações robustas no registro:** você checa formato do email, força regras de senha e evita campos extras.
+- **Proteção consistente das rotas:** o middleware `authenticateToken` está aplicado nas rotas de agentes e casos, conforme esperado.
+- **Documentação Swagger bem feita:** seus comentários nas rotas e no INSTRUCTIONS.md estão claros e completos.
+- **Bônus conquistados:** você implementou o endpoint `/usuarios/me` para retornar dados do usuário autenticado e filtros em agentes e casos funcionais.
 
 ---
 
-### 1. **Erro 400 ao tentar criar usuário com e-mail já em uso**
+## 🚨 Testes que Falharam e Análise de Causa Raiz
+
+Você teve alguns testes base que falharam, principalmente relacionados a usuários (e-mail duplicado) e agentes/casos (filtros e buscas). Vamos destrinchar os principais para você entender o que pode estar acontecendo e como corrigir.
+
+---
+
+### 1. `USERS: Recebe erro 400 ao tentar criar um usuário com e-mail já em uso`
 
 **O que o teste espera:**  
-Quando tentar registrar um usuário com um e-mail que já existe, a API deve responder com status 400 e mensagem clara.
+Ao tentar registrar um usuário com um e-mail que já existe no banco, a API deve responder com status 400 e uma mensagem de erro clara.
 
 **Análise do seu código:**  
-No `authController.js`, seu método `register` faz essa verificação:
+No seu `authController.register`, você faz a verificação corretamente:
 
 ```js
 const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
@@ -50,151 +48,82 @@ if (usuarioExistente) {
 }
 ```
 
-Isso está correto, porém, o teste falhou. Isso pode acontecer se:
+**Possível causa do erro:**  
+- Pode ser que o teste espere o campo de erro como um array no JSON, por exemplo, `{ errors: ["Email já está em uso"] }`, mas seu retorno só tem `message`.
+- Ou talvez o teste espere o campo `email` explicitamente no erro.
 
-- O e-mail não está sendo normalizado corretamente (ex: espaços antes/depois).  
-- Ou se a migration não criou a restrição de unicidade no banco, permitindo duplicatas.
-
-**Verificação importante:**  
-Confirme que sua migration `20250821224959_create_usuarios_table.js` tem a linha `.unique()` no campo `email` (que você tem, o que é ótimo).  
-Além disso, no `usuariosRepository.js`, o método `findByEmail` faz:
+**Sugestão:**  
+Padronize o retorno de erro para incluir o campo `errors` como array, assim como você faz em outras validações:
 
 ```js
-const emailNormalizado = email.trim().toLowerCase();
-return await db('usuarios').where('email', emailNormalizado).first();
+if (usuarioExistente) {
+    return res.status(400).json({
+        status: 400,
+        message: "Dados inválidos",
+        errors: ["Email já está em uso"]
+    });
+}
 ```
 
-Está correto. Pode ser que o teste esteja enviando e-mails com maiúsculas ou espaços, e seu código não está normalizando antes de verificar. Você normaliza no controller, o que é bom.
-
-**Possível causa:**  
-- Se a requisição de registro não estiver normalizando o e-mail antes da verificação, pode dar problema.  
-- Ou pode ser um problema de concorrência no teste (testes rodando em paralelo sem limpar a base).
-
-**Recomendação:**  
-- Garanta que o e-mail seja sempre `.trim().toLowerCase()` antes de qualquer operação, tanto para busca quanto para inserção.  
-- Para aprender mais sobre autenticação e validação de usuários, recomendo fortemente este vídeo, feito pelos meus criadores:  
-  👉 [Autenticação com Node.js e JWT](https://www.youtube.com/watch?v=Q4LQOfYwujk)  
-- Também veja este para entender bem o uso do bcrypt e JWT juntos:  
-  👉 [JWT e bcrypt na prática](https://www.youtube.com/watch?v=L04Ln97AwoY)
+Isso deixa a resposta consistente e provavelmente resolve o problema do teste.
 
 ---
 
-### 2. **Falha em testes relacionados à criação, listagem, busca, atualização e exclusão de agentes**
+### 2. `AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID` e testes relacionados a agentes
 
-Você teve vários testes que falharam para agentes, como:
+Você implementou muito bem as validações e os retornos dos agentes. Porém, alguns testes falharam relacionados a:
 
-- Criação de agentes com status 201 e dados corretos
-- Listagem de agentes com status 200 e dados completos
-- Busca por ID com status 200 e dados corretos
-- Atualização (PUT e PATCH) com status 200 e dados atualizados
-- Exclusão com status 204 e corpo vazio
-- Erros 400 e 404 para payload incorreto, ID inválido, agente inexistente
-- Erro 401 para acesso sem token JWT
+- **Filtros e ordenação de agentes:**  
+  Testes bonus indicam que a filtragem por data de incorporação com ordenação ascendente e descendente não está 100% conforme esperado.
 
-**Análise do seu código:**
+- **Busca de agente por ID e erros para ID inválido:**  
+  Esses testes falharam, mas seu código tem validação de ID.
 
-- Seu `agentesController.js` tem validações muito bem feitas, o que é ótimo!  
-- O middleware de autenticação está aplicado corretamente nas rotas (`agentesRoutes.js`), o que deve garantir erro 401 para acessos não autorizados.
+**Análise detalhada:**
 
-Porém, o teste falhou em criar agentes corretamente com status 201 e dados inalterados (incluindo o ID). Olhando seu método `createAgente`:
+No seu `agentesRepository.findFiltered`:
 
 ```js
-async function createAgente(req, res) {
-    try {
-        if (req.body.id !== undefined) {
-            return res.status(400).json({
-                status: 400,
-                message: "Parâmetros inválidos",
-                errors: ["O campo 'id' não pode ser informado na criação"]
-            });
-        }
+if (sort) {
+  const field = 'dataDeIncorporacao';
+  const order = sort.startsWith('-') ? 'desc' : 'asc';
+  
+  qb.orderBy(field, order);
+}
+```
 
-        const errors = validateAgenteForCreate(req.body);
-        if (errors.length > 0) {
-            return res.status(400).json({
-                status: 400,
-                message: "Parâmetros inválidos",
-                errors
-            });
-        }
+E na validação do controller:
 
-        const novoAgente = await agentesRepository.create(req.body);
-        res.status(201).json(novoAgente);
-    } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: "Erro interno no servidor",
-            error: error.message
+```js
+if (sort && !['dataDeIncorporacao', '-dataDeIncorporacao'].includes(sort)) {
+    return res.status(400).json({
+        status: 400,
+        message: "Parâmetros inválidos",
+        errors: ["O parâmetro 'sort' deve ser 'dataDeIncorporacao' ou '-dataDeIncorporacao'"]
+    });
+}
+```
+
+**Possível causa do problema:**
+
+- No banco, o campo `dataDeIncorporacao` é do tipo `date`, mas no migration, você usou `table.date('dataDeIncorporacao')`.  
+- A ordenação deve funcionar, mas o teste pode estar esperando o campo com nome exato (case sensitive) ou o formato de data no JSON.
+
+- Além disso, no seu controller, quando você filtra por `cargo`, você faz:
+
+```js
+if (cargo !== undefined) {
+    if (typeof cargo !== 'string' || !['delegado', 'inspetor', 'detetive'].includes(cargo.toLowerCase())) {
+        return res.status(400).json({
+            status: 400,
+            message: "Parâmetros inválidos",
+            errors: ["O parâmetro 'cargo' deve ser um dos valores: 'delegado', 'inspetor', 'detetive'"]
         });
     }
 }
 ```
 
-**Possível motivo do erro:**  
-- O teste pode estar esperando que o objeto retornado tenha uma estrutura específica (ex: com status 201, mensagem e dados dentro de um campo `data`), e você está retornando diretamente o objeto do banco.  
-- Exemplo esperado pelo teste (baseado no padrão usado no `authController`):
-
-```json
-{
-  "status": 201,
-  "message": "Agente criado com sucesso",
-  "data": {
-    "id": 1,
-    "nome": "...",
-    "dataDeIncorporacao": "...",
-    "cargo": "..."
-  }
-}
-```
-
-Enquanto seu código retorna só o objeto `novoAgente` sem essa estrutura.
-
-**Solução simples:**  
-Modifique o retorno para algo assim:
-
-```js
-res.status(201).json({
-  status: 201,
-  message: "Agente criado com sucesso",
-  data: novoAgente
-});
-```
-
-Isso vai alinhar a resposta com o esperado nos testes.
-
----
-
-### 3. **Falha nos testes de filtros e buscas avançadas (bônus)**
-
-Você implementou filtros para agentes por cargo e ordenação, e para casos por status, agente e pesquisa textual. Os testes bônus falharam, indicando que esses filtros não estão 100% corretos.
-
-Analisando o `agentesRepository.js`:
-
-```js
-async function findFiltered({ cargo, sort } = {}) {
-  const qb = db('agentes');
-
-  if (cargo) {
-    const cargoLower = cargo.toLowerCase();
-    qb.whereRaw('LOWER(cargo) ILIKE ?', [`%${cargoLower}%`]);
-  }
-
-  if (sort) {
-    const field = 'dataDeIncorporacao';
-    const order = sort.startsWith('-') ? 'desc' : 'asc';
-    
-    qb.orderBy(field, order);
-  }
-
-  return await qb.select('*');
-}
-```
-
-**Possível problema:**  
-- O uso de `%${cargoLower}%` no `ILIKE` permite que qualquer substring caseira seja aceita, mas o requisito provavelmente quer que o cargo seja exatamente igual (ex: "delegado", "inspetor", "detetive").  
-- O filtro deveria usar `whereRaw('LOWER(cargo) = ?', [cargoLower])` para igualdade, não `ILIKE` com `%`.
-
-**Correção sugerida:**
+Mas no repository, você usa:
 
 ```js
 if (cargo) {
@@ -203,143 +132,130 @@ if (cargo) {
 }
 ```
 
-Isso vai garantir que só cargos exatos sejam filtrados.
+**Sugestão:**
+
+- Verifique se o campo `cargo` está armazenado no banco exatamente como 'delegado', 'inspetor' ou 'detetive' (lowercase). Se houver alguma diferença de maiúsculas/minúsculas, a query pode falhar.
+- Para garantir, use `.whereRaw('LOWER(cargo) = ?', [cargo.toLowerCase()])` como você fez, está correto.
+- Para o campo `dataDeIncorporacao`, verifique se o formato de retorno JSON está coerente com o esperado pelo teste (ex: ISO 8601).
 
 ---
 
-### 4. **Endpoint `/usuarios/me` não retornando dados do usuário autenticado corretamente**
+### 3. `CASES: Recebe status code 404 ao tentar criar caso com ID de agente inexistente` e outros erros relacionados a casos
 
-No `authController.js`, seu método `getMe` faz:
-
-```js
-async function getMe(req, res) {
-    try {
-        res.json({
-            status: 200,
-            data: {
-                id: req.user.id,
-                nome: req.user.nome,
-                email: req.user.email,
-                created_at: req.user.created_at
-            }
-        });
-    } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: "Erro interno no servidor",
-            error: error.message
-        });
-    }
-}
-```
-
-O problema é que o objeto `req.user` é carregado no middleware `authMiddleware` via:
+No seu `casosController.createCaso`, você valida se o agente existe:
 
 ```js
-const usuario = await usuariosRepository.findById(decoded.id);
-req.user = usuario;
-```
-
-No entanto, no seu `usuariosRepository.findById`, você seleciona `id`, `nome`, `email` e `created_at`. Isso é ótimo, mas o teste bônus pode estar esperando o campo `created_at` vindo em formato ISO string, e o banco pode estar retornando como objeto Date.
-
-**Sugestão:**  
-Você pode converter para string ISO no controller para garantir:
-
-```js
-res.json({
-  status: 200,
-  data: {
-    id: req.user.id,
-    nome: req.user.nome,
-    email: req.user.email,
-    created_at: req.user.created_at ? req.user.created_at.toISOString() : null
-  }
-});
-```
-
-Isso evita problemas de serialização.
-
----
-
-### 5. **Middleware de autenticação e blacklist**
-
-Você implementou blacklist para tokens no `authMiddleware.js`:
-
-```js
-const tokenBlacklist = new Set();
-
-async function authenticateToken(req, res, next) {
-  // ...
-  if (tokenBlacklist.has(token)) {
-    return res.status(401).json({
-      status: 401,
-      message: "Token inválido"
+const agenteExiste = await agentesRepository.findById(req.body.agente_id);
+if (!agenteExiste) {
+    return res.status(404).json({
+        status: 404,
+        message: "Recurso não encontrado",
+        errors: ["O agente_id fornecido não existe"]
     });
-  }
-  // ...
 }
 ```
 
-Isso é ótimo! Porém, o uso de `Set()` em memória significa que se o servidor reiniciar, a blacklist se perde. Para produção, o ideal é usar um armazenamento persistente (Redis, DB).
+**Possível causa do problema:**
 
-**Mas para o desafio, está correto.**
+- Se o `agente_id` for inválido (ex: string não numérica), seu código não está validando isso antes de chamar `findById`.
+- Isso pode causar erro silencioso ou comportamento inesperado.
 
----
+**Sugestão:**
 
-## 🛠️ Recomendações gerais para melhorar seu código e passar nos testes
+- Faça uma validação explícita do `agente_id` para garantir que seja um número válido antes de consultar o banco:
 
-- **Padronize as respostas da API**: Sempre retorne objetos com `status`, `message` e `data` (quando aplicável). Isso ajuda os testes a validar corretamente.
+```js
+const agenteId = Number(req.body.agente_id);
+if (isNaN(agenteId) || agenteId <= 0) {
+    return res.status(400).json({
+        status: 400,
+        message: "Parâmetros inválidos",
+        errors: ["O campo 'agente_id' deve ser um número válido"]
+    });
+}
+```
 
-- **Normalização consistente de dados**: Garanta que e-mails sejam sempre `trim().toLowerCase()` antes de qualquer operação.
-
-- **Ajuste filtros para igualdade exata** quando o requisito pedir isso (exemplo: cargo dos agentes).
-
-- **Converta datas para strings ISO** ao retornar JSON para evitar problemas de serialização.
-
-- **Revise os testes que falharam** para entender exatamente a estrutura de resposta esperada.
-
----
-
-## 📚 Recursos que vão te ajudar muito
-
-- Para autenticação, JWT e bcrypt, este vídeo feito pelos meus criadores é essencial:  
-  👉 https://www.youtube.com/watch?v=Q4LQOfYwujk
-
-- Para entender melhor o uso prático de JWT e bcrypt juntos:  
-  👉 https://www.youtube.com/watch?v=L04Ln97AwoY
-
-- Sobre Knex e query builder para filtros e migrations:  
-  👉 https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
-
-- Para organizar seu projeto com boas práticas MVC em Node.js:  
-  👉 https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
-
-- Para configurar banco PostgreSQL com Docker e Knex:  
-  👉 https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s
+- Isso evita consultas desnecessárias e melhora a resposta para o cliente.
 
 ---
 
-## 🔍 Resumo rápido dos principais pontos para focar
+### 4. `AGENTS: Recebe status code 401 ao tentar acessar rotas sem token JWT`
 
-- [ ] Padronize respostas JSON com `status`, `message` e `data` para criar agentes e outros recursos.  
-- [ ] Garanta normalização de e-mails antes de verificar existência e criar usuários.  
-- [ ] Ajuste filtro de cargo para usar igualdade exata (`LOWER(cargo) = ?`) em vez de `ILIKE '%...%'`.  
-- [ ] Converta datas para string ISO em respostas JSON para evitar problemas de serialização.  
-- [ ] Revise os testes que falharam para entender as expectativas de formato e mensagens.  
-- [ ] Continue aplicando o middleware de autenticação em todas as rotas protegidas.  
+Você já implementou o middleware `authenticateToken` que verifica o token e a blacklist, retornando 401 quando necessário. Isso está correto e os testes passaram nessa parte, parabéns! 🎉
 
 ---
 
-## 💬 Para finalizar
+### 5. Outros erros 400 e 404 em agentes e casos
 
-Matheus, você está no caminho certo! Seu código mostra que entendeu os conceitos centrais de autenticação, segurança e organização de uma API REST profissional. Com alguns ajustes finos na padronização das respostas e filtros, você vai destravar todos os testes e ter uma aplicação robusta e pronta para produção.
+Você está fazendo validações robustas nos controllers, o que é ótimo. Porém, alguns detalhes pequenos podem afetar os testes, como:
 
-Continue firme, revise com calma os pontos que te mostrei, e não hesite em revisitar os vídeos recomendados para consolidar seu aprendizado.
+- Retornar mensagens e estrutura JSON exatamente como o teste espera.
+- Garantir que o campo `id` não seja alterado ou enviado na criação.
+- Validar payload vazio corretamente.
 
-Estou aqui torcendo pelo seu sucesso! 🚀✨
+---
 
-Abraços,  
-Seu Code Buddy 🤖💙
+## 🛠️ Recomendações para Melhorias e Correções
+
+- **Padronize os erros de validação com o campo `errors` como array**, incluindo mensagens específicas. Isso ajuda o cliente a entender o que deu errado e atende melhor os testes.
+
+- **Valide os parâmetros numéricos (IDs) antes de consultar o banco**, para evitar erros silenciosos.
+
+- **Revise os formatos de data e campos sensíveis a maiúsculas/minúsculas** para garantir que o filtro e ordenação funcionem conforme esperado.
+
+- **No registro de usuário, ajuste o retorno de erro para e-mail duplicado** para incluir `errors: ["Email já está em uso"]`.
+
+- **Teste localmente com payloads inválidos e IDs inválidos** para garantir que os retornos estejam corretos.
+
+---
+
+## 📚 Recursos de Aprendizado Recomendados
+
+Como você está trabalhando com autenticação, JWT e hashing, e também com validações e Knex, recomendo fortemente os seguintes vídeos para aprofundar seus conhecimentos e corrigir os pontos acima:
+
+- **Autenticação e segurança com JWT e bcrypt:**  
+  [https://www.youtube.com/watch?v=Q4LQOfYwujk](https://www.youtube.com/watch?v=Q4LQOfYwujk)  
+  *Esse vídeo, feito pelos meus criadores, fala muito bem sobre os conceitos básicos e fundamentais da cibersegurança.*
+
+- **JWT na prática:**  
+  [https://www.youtube.com/watch?v=keS0JWOypIU](https://www.youtube.com/watch?v=keS0JWOypIU)
+
+- **Uso de JWT e bcrypt juntos:**  
+  [https://www.youtube.com/watch?v=L04Ln97AwoY](https://www.youtube.com/watch?v=L04Ln97AwoY)
+
+- **Knex Query Builder para manipulação do banco:**  
+  [https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s](https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s)
+
+- **Arquitetura MVC em Node.js para organizar seu projeto:**  
+  [https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s](https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s)
+
+---
+
+## ⚠️ Atenção à Estrutura de Diretórios
+
+Sua estrutura está conforme o esperado, com pastas claras para controllers, routes, repositories, middlewares, db, e utils. Isso é fundamental para manter o projeto organizado e escalável. Continue assim!
+
+---
+
+## 📝 Resumo dos Pontos para Melhorar
+
+- [ ] Ajustar resposta de erro 400 para e-mail duplicado no registro, incluindo campo `errors` com array de mensagens.  
+- [ ] Validar IDs numéricos (ex: `agente_id`) antes de consultar o banco para evitar erros 404 inesperados.  
+- [ ] Garantir que os filtros e ordenações em agentes e casos estejam tratando maiúsculas/minúsculas e formatos corretamente.  
+- [ ] Padronizar mensagens e estrutura JSON de erros para os testes reconhecerem (usar `errors: []`).  
+- [ ] Testar as rotas com payloads inválidos, IDs inválidos e sem token para garantir os status codes corretos.  
+
+---
+
+## ✨ Considerações Finais
+
+Matheus, você está no caminho certo! Seu código demonstra cuidado com segurança, estrutura e validação, que são os pilares de uma API profissional. Com alguns ajustes finos na padronização das respostas e validações extras, você vai destravar todos os testes e garantir uma aplicação robusta e segura.
+
+Continue assim, aprendendo e evoluindo! Se precisar, volte aos vídeos recomendados para reforçar os conceitos de autenticação e manipulação de banco com Knex.
+
+Estou torcendo pelo seu sucesso! 🚀💪
+
+Abraços do seu Code Buddy 🤖❤️
 ```
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
