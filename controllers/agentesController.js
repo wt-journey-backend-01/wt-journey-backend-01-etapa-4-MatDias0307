@@ -1,87 +1,6 @@
-const agentesRepository = require("../repositories/agentesRepository");
+const agentsRepository = require("../repositories/agentesRepository");
 
-function validateId(id) {
-    const numId = parseInt(id, 10);
-    return !isNaN(numId) && numId > 0;
-}
-
-function validateAgenteForUpdate(agente, isFullUpdate = false) {
-    const errors = [];
-    
-    if (agente.id !== undefined) {
-        errors.push({ field: 'id', message: "O campo 'id' não pode ser alterado" });
-    }
-
-    if (isFullUpdate) {
-        if (!agente.nome) errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
-        if (!agente.dataDeIncorporacao) errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
-        if (!agente.cargo) errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
-    }
-
-    if (agente.nome !== undefined && typeof agente.nome !== 'string') {
-        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
-    }
-
-    if (agente.dataDeIncorporacao !== undefined) {
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(agente.dataDeIncorporacao)) {
-            errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
-        } else {
-            const [ano, mes, dia] = agente.dataDeIncorporacao.split('-').map(Number);
-            const data = new Date(Date.UTC(ano, mes - 1, dia));
-            const hoje = new Date();
-            hoje.setUTCHours(0,0,0,0);
-            if (data > hoje) {
-                errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
-            }
-        }
-    }
-
-    if (agente.cargo !== undefined) {
-        if (typeof agente.cargo !== 'string' || !['delegado','inspetor','detetive'].includes(agente.cargo.toLowerCase())) {
-            errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
-        }
-    }
-
-    return errors;
-}
-
-function validateAgenteForCreate(agente) {
-    const errors = [];
-
-    if (agente.id !== undefined) {
-        errors.push({ field: 'id', message: "O campo 'id' não pode ser informado na criação" });
-    }
-
-    if (!agente.nome) {
-        errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
-    } else if (typeof agente.nome !== "string") {
-        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
-    }
-
-    if (!agente.dataDeIncorporacao) {
-        errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
-    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(agente.dataDeIncorporacao)) {
-        errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
-    } else {
-        const [ano, mes, dia] = agente.dataDeIncorporacao.split('-').map(Number);
-        const data = new Date(Date.UTC(ano, mes - 1, dia));
-        const hoje = new Date();
-        hoje.setUTCHours(0, 0, 0, 0);
-        if (data > hoje) {
-            errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
-        }
-    }
-
-    if (!agente.cargo) {
-        errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
-    } else if (typeof agente.cargo !== "string" || !['delegado', 'inspetor', 'detetive'].includes(agente.cargo.toLowerCase())) {
-        errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
-    }
-
-    return errors;
-}
-
-async function getAllAgentes(req, res) {
+async function getAllAgents(req, res) {
     try {
         const { cargo, sort } = req.query;
 
@@ -103,16 +22,16 @@ async function getAllAgentes(req, res) {
             }
         }
 
-        const agentes = await agentesRepository.findFiltered({ cargo, sort });
+        const agents = await agentsRepository.findFiltered({ cargo, sort });
 
-        if (cargo && (!agentes || agentes.length === 0)) {
+        if (cargo && (!agents || agents.length === 0)) {
             return res.status(404).json({
                 status: 404,
                 message: "Nenhum agente encontrado para o cargo especificado"
             });
         }
 
-        res.json(agentes);
+        res.json(agents);
     } catch (error) {
         res.status(500).json({
             status: 500,
@@ -122,18 +41,19 @@ async function getAllAgentes(req, res) {
     }
 }
 
-async function getAgenteById(req, res) {
+async function getAgentById(req, res) {
     try {
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
 
-        const agente = await agentesRepository.findById(req.params.id);
-        if (agente) {
-            res.json(agente);
+        const agent = await agentsRepository.findById(req.params.id);
+
+        if (agent) {
+            res.json(agent);
         } else {
             res.status(404).json({ 
                 status: 404,
@@ -149,7 +69,7 @@ async function getAgenteById(req, res) {
     }
 }
 
-async function createAgente(req, res) {
+async function createAgent(req, res) {
     try {
         if (req.body.id !== undefined) {
             return res.status(400).json({
@@ -159,7 +79,7 @@ async function createAgente(req, res) {
             });
         }
 
-        const errors = validateAgenteForCreate(req.body);
+        const errors = validateAgentForCreate(req.body);
         if (errors.length > 0) {
             return res.status(400).json({
                 status: 400,
@@ -168,16 +88,16 @@ async function createAgente(req, res) {
             });
         }
 
-        const novoAgente = await agentesRepository.create(req.body);
+        const newAgent = await agentsRepository.create(req.body);
 
         res.status(201).json({
             status: 201,
             message: "Agente criado com sucesso",
             data: {
-                id: novoAgente.id,
-                nome: novoAgente.nome,
-                dataDeIncorporacao: novoAgente.dataDeIncorporacao,
-                cargo: novoAgente.cargo
+                id: newAgent.id,
+                nome: newAgent.nome,
+                dataDeIncorporacao: newAgent.dataDeIncorporacao,
+                cargo: newAgent.cargo
             }
         });
     } catch (error) {
@@ -189,7 +109,7 @@ async function createAgente(req, res) {
     }
 }
 
-async function updateAgente(req, res) {
+async function updateAgent(req, res) {
     try {
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({
@@ -199,14 +119,14 @@ async function updateAgente(req, res) {
             });
         }
 
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
 
-        const errors = validateAgenteForUpdate(req.body, true);
+        const errors = validateAgentForUpdate(req.body, true);
         if (errors.length > 0) {
             return res.status(400).json({
                 status: 400,
@@ -215,16 +135,16 @@ async function updateAgente(req, res) {
             });
         }
 
-        const agenteExistente = await agentesRepository.findById(req.params.id);
-        if (!agenteExistente) {
+        const existingAgent = await agentsRepository.findById(req.params.id);
+        if (!existingAgent) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Agente não encontrado"
             });
         }
 
-        const agenteAtualizado = await agentesRepository.update(req.params.id, req.body);
-        res.json(agenteAtualizado);
+        const updatedAgent = await agentsRepository.update(req.params.id, req.body);
+        res.json(updatedAgent);
     } catch (error) {
         res.status(500).json({ 
             status: 500,
@@ -234,7 +154,7 @@ async function updateAgente(req, res) {
     }
 }
 
-async function patchAgente(req, res) {
+async function patchAgent(req, res) {
     try {
         if (Object.keys(req.body).length === 0) {
             return res.status(400).json({
@@ -244,14 +164,14 @@ async function patchAgente(req, res) {
             });
         }
 
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
 
-        const errors = validateAgenteForUpdate(req.body, false);
+        const errors = validateAgentForUpdate(req.body, false);
         if (errors.length > 0) {
             return res.status(400).json({
                 status: 400,
@@ -260,16 +180,16 @@ async function patchAgente(req, res) {
             });
         }
 
-        const agenteExistente = await agentesRepository.findById(req.params.id);
-        if (!agenteExistente) {
+        const existingAgent = await agentsRepository.findById(req.params.id);
+        if (!existingAgent) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Agente não encontrado"
             });
         }
 
-        const agenteAtualizado = await agentesRepository.update(req.params.id, req.body);
-        res.json(agenteAtualizado);
+        const updatedAgent = await agentsRepository.update(req.params.id, req.body);
+        res.json(updatedAgent);
     } catch (error) {
         res.status(500).json({ 
             status: 500,
@@ -279,24 +199,24 @@ async function patchAgente(req, res) {
     }
 }
 
-async function deleteAgente(req, res) {
+async function deleteAgent(req, res) {
     try {
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
 
-        const agenteExistente = await agentesRepository.findById(req.params.id);
-        if (!agenteExistente) {
+        const existingAgent = await agentsRepository.findById(req.params.id);
+        if (!existingAgent) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Agente não encontrado" 
             });
         }
 
-        await agentesRepository.remove(req.params.id);
+        await agentsRepository.remove(req.params.id);
         res.status(204).end();
     } catch (error) {
         res.status(500).json({ 
@@ -307,25 +227,25 @@ async function deleteAgente(req, res) {
     }
 }
 
-async function getCasosByAgenteId(req, res) {
+async function getCasesByAgentId(req, res) {
     try {
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
         
-        const agente = await agentesRepository.findById(req.params.id);
-        if (!agente) {
+        const agent = await agentsRepository.findById(req.params.id);
+        if (!agent) {
             return res.status(404).json({
                 status: 404,
                 message: "Agente não encontrado"
             });
         }
 
-        const casos = await agentesRepository.getCasosByAgenteId(req.params.id);
-        res.json(casos);
+        const cases = await agentsRepository.getCasosByAgenteId(req.params.id);
+        res.json(cases);
     } catch (error) {
         res.status(500).json({
             status: 500,
@@ -335,12 +255,93 @@ async function getCasosByAgenteId(req, res) {
     }
 }
 
+function isValidId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
+function validateAgentForUpdate(agent, isFullUpdate = false) {
+    const errors = [];
+    
+    if (agent.id !== undefined) {
+        errors.push({ field: 'id', message: "O campo 'id' não pode ser alterado" });
+    }
+
+    if (isFullUpdate) {
+        if (!agent.nome) errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
+        if (!agent.dataDeIncorporacao) errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
+        if (!agent.cargo) errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
+    }
+
+    if (agent.nome !== undefined && typeof agent.nome !== 'string') {
+        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
+    }
+
+    if (agent.dataDeIncorporacao !== undefined) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(agent.dataDeIncorporacao)) {
+            errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
+        } else {
+            const [year, month, day] = agent.dataDeIncorporacao.split('-').map(Number);
+            const date = new Date(Date.UTC(year, month - 1, day));
+            const today = new Date();
+            today.setUTCHours(0,0,0,0);
+            if (date > today) {
+                errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
+            }
+        }
+    }
+
+    if (agent.cargo !== undefined) {
+        if (typeof agent.cargo !== 'string' || !['delegado','inspetor','detetive'].includes(agent.cargo.toLowerCase())) {
+            errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
+        }
+    }
+
+    return errors;
+}
+
+function validateAgentForCreate(agent) {
+    const errors = [];
+
+    if (agent.id !== undefined) {
+        errors.push({ field: 'id', message: "O campo 'id' não pode ser informado na criação" });
+    }
+
+    if (!agent.nome) {
+        errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
+    } else if (typeof agent.nome !== "string") {
+        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
+    }
+
+    if (!agent.dataDeIncorporacao) {
+        errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
+    } else if (!/^\d{4}-\d{2}-\d{2}$/.test(agent.dataDeIncorporacao)) {
+        errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
+    } else {
+        const [year, month, day] = agent.dataDeIncorporacao.split('-').map(Number);
+        const date = new Date(Date.UTC(year, month - 1, day));
+        const today = new Date();
+        today.setUTCHours(0, 0, 0, 0);
+        if (date > today) {
+            errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
+        }
+    }
+
+    if (!agent.cargo) {
+        errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
+    } else if (typeof agent.cargo !== "string" || !['delegado', 'inspetor', 'detetive'].includes(agent.cargo.toLowerCase())) {
+        errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
+    }
+
+    return errors;
+}
+
 module.exports = {
-    getAllAgentes,
-    getAgenteById,
-    createAgente,
-    updateAgente,
-    patchAgente,
-    deleteAgente,
-    getCasosByAgenteId
+    getAllAgents,
+    getAgentById,
+    createAgent,
+    updateAgent,
+    patchAgent,
+    deleteAgent,
+    getCasesByAgentId
 };

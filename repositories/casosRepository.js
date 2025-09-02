@@ -1,45 +1,39 @@
 const db = require('../db/db');
 
+async function findAll() {
+    const cases = await db("casos");
+    return cases;
+}
+  
 async function findById(id) {
-    return await db('casos').where({ id }).first();
+    const found = await db("casos").where({ id: Number(id) }).first();
+    return found || null;
 }
 
-async function create(caso) {
-    const { id: _, ...dados } = caso;
-    
-    const [novoCaso] = await db('casos')
-        .insert(dados)
-        .returning('*');
-    
-    return novoCaso;
+async function create(caseData) {
+    const [created] = await db("casos").insert(caseData).returning("*");
+    return created;
 }
 
-async function update(id, casoAtualizado) {
-    const { id: _, ...dadosSemId } = casoAtualizado;
-    
-    const [casoAtualizadoDb] = await db('casos')
-        .where({ id })
-        .update(dadosSemId)
-        .returning('*');
-    
-    return casoAtualizadoDb || null;
+async function update(updatedData, id) {
+    const [updated] = await db("casos").where({ id: Number(id) }).update(updatedData).returning("*");
+    return updated || null;
 }
 
 async function remove(id) {
-    await db('casos').where({ id }).del();
+    const deleted = await db("casos").where({ id: Number(id) }).del();
+    return deleted;
 }
 
 async function searchWithFilters({ agente_id, status, q }) {
-    const validAgenteId = agente_id && !isNaN(Number(agente_id)) ? Number(agente_id) : null;
-
+    const validAgentId = agente_id && !isNaN(Number(agente_id)) ? Number(agente_id) : null;
     const cleanStatus = status ? status.trim().toLowerCase() : null;
-
     const cleanQuery = q ? q.trim() : null;
     
     return await db('casos')
         .modify(function(queryBuilder) {
-            if (validAgenteId !== null) {
-                queryBuilder.where('agente_id', validAgenteId);
+            if (validAgentId !== null) {
+                queryBuilder.where('agente_id', validAgentId);
             }
             if (cleanStatus) {
                 queryBuilder.where('status', cleanStatus);
@@ -55,6 +49,7 @@ async function searchWithFilters({ agente_id, status, q }) {
 }
 
 module.exports = {
+    findAll,
     findById,
     create,
     update,

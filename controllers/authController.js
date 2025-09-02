@@ -1,52 +1,5 @@
 const jwt = require('jsonwebtoken');
-const usuariosRepository = require('../repositories/usuariosRepository');
-const { tokenBlacklist } = require('../middlewares/authMiddleware');
-
-function validateId(id) {
-    const numId = parseInt(id, 10);
-    return !isNaN(numId) && numId > 0;
-}
-
-function validateEmail(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
-}
-
-function validatePassword(senha) {
-    const minLength = senha.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(senha);
-    const hasLowerCase = /[a-z]/.test(senha);
-    const hasNumber = /\d/.test(senha);
-    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(senha);
-    
-    return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
-}
-
-function validateRegisterPayload(body) {
-    const errors = [];
-    const allowedFields = ['nome', 'email', 'senha'];
-    
-    const extraFields = Object.keys(body).filter(field => !allowedFields.includes(field));
-    if (extraFields.length > 0) {
-        extraFields.forEach(field => {
-            errors.push(`Campo '${field}' não é permitido`);
-        });
-    }
-    
-    if (!body.nome) errors.push("O campo 'nome' é obrigatório");
-    if (!body.email) errors.push("O campo 'email' é obrigatório");
-    if (!body.senha) errors.push("O campo 'senha' é obrigatório");
-    
-    if (body.email && !validateEmail(body.email)) {
-        errors.push("Email inválido");
-    }
-    
-    if (body.senha && !validatePassword(body.senha)) {
-        errors.push("Senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais");
-    }
-    
-    return errors;
-}
+const usersRepository = require('../repositories/usuariosRepository');
 
 async function register(req, res) {
     try {
@@ -60,20 +13,19 @@ async function register(req, res) {
         }
 
         const { nome, email, senha } = req.body;
+        const normalizedEmail = email.trim().toLowerCase();
 
-        const emailNormalizado = email.trim().toLowerCase();
-
-        const usuarioExistente = await usuariosRepository.findByEmail(emailNormalizado);
-        if (usuarioExistente) {
+        const existingUser = await usersRepository.findByEmail(normalizedEmail);
+        if (existingUser) {
             return res.status(400).json({
                 status: 400,
                 message: "Email já está em uso"
             });
         }
 
-        const novoUsuario = await usuariosRepository.create({ 
+        const newUser = await usersRepository.create({ 
             nome, 
-            email: emailNormalizado, 
+            email: normalizedEmail, 
             senha 
         });
         
@@ -81,10 +33,9 @@ async function register(req, res) {
             status: 201,
             message: "Usuário criado com sucesso",
             data: {
-                id: novoUsuario.id,
-                nome: novoUsuario.nome,
-                email: novoUsuario.email,
-                created_at: novoUsuario.created_at.toISOString()
+                id: newUser.id,
+                nome: newUser.nome,
+                email: newUser.email,
             }
         });
     } catch (error) {
@@ -107,18 +58,18 @@ async function login(req, res) {
             });
         }
 
-        const emailNormalizado = email.trim().toLowerCase();
-        const usuario = await usuariosRepository.findByEmail(emailNormalizado);
+        const normalizedEmail = email.trim().toLowerCase();
+        const user = await usersRepository.findByEmail(normalizedEmail);
         
-        if (!usuario) {
+        if (!user) {
             return res.status(401).json({
                 status: 401,
                 message: "Credenciais inválidas"
             });
         }
 
-        const senhaValida = await usuariosRepository.verifyPassword(senha, usuario.senha);
-        if (!senhaValida) {
+        const isPasswordValid = await usersRepository.verifyPassword(senha, user.senha);
+        if (!isPasswordValid) {
             return res.status(401).json({
                 status: 401,
                 message: "Credenciais inválidas"
@@ -126,10 +77,16 @@ async function login(req, res) {
         }
 
         const token = jwt.sign(
-            { id: usuario.id, email: usuario.email },
-            process.env.JWT_SECRET,
+            { id: user.id, email: user.email },
+            process.env.JWT_SECRET || "secret",
             { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }
         );
+
+        res.cookie('access_token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict'
+        });
 
         res.json({
             access_token: token
@@ -145,12 +102,7 @@ async function login(req, res) {
 
 async function logout(req, res) {
     try {
-        const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
-        
-        if (token) {
-            tokenBlacklist.add(token);
-        }
+        res.clearCookie('access_token');
         
         res.json({
             status: 200,
@@ -169,7 +121,7 @@ async function deleteUser(req, res) {
     try {
         const { id } = req.params;
 
-        if (!validateId(id)) {
+        if (!isValidId(id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
@@ -183,15 +135,17 @@ async function deleteUser(req, res) {
             });
         }
         
-        const usuario = await usuariosRepository.findById(id);
-        if (!usuario) {
+        const user = await usersRepository.findById(id);
+        if (!user) {
             return res.status(404).json({
                 status: 404,
                 message: "Usuário não encontrado"
             });
         }
 
-        await usuariosRepository.deleteUser(id);
+        await usersRepository.deleteUser(id);
+        
+        res.clearCookie('access_token');
         
         res.status(204).end();
     } catch (error) {
@@ -205,13 +159,21 @@ async function deleteUser(req, res) {
 
 async function getMe(req, res) {
     try {
+        const user = await usersRepository.findById(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({
+                status: 404,
+                message: "Usuário não encontrado"
+            });
+        }
+
         res.json({
             status: 200,
             data: {
-                id: req.user.id,
-                nome: req.user.nome,
-                email: req.user.email,
-                created_at: req.user.created_at ? req.user.created_at.toISOString() : null
+                id: user.id,
+                nome: user.nome,
+                email: user.email,
             }
         });
     } catch (error) {
@@ -221,6 +183,52 @@ async function getMe(req, res) {
             error: error.message
         });
     }
+}
+
+function validateRegisterPayload(body) {
+    const errors = [];
+    const allowedFields = ['nome', 'email', 'senha'];
+    
+    const extraFields = Object.keys(body).filter(field => !allowedFields.includes(field));
+    if (extraFields.length > 0) {
+        extraFields.forEach(field => {
+            errors.push(`Campo '${field}' não é permitido`);
+        });
+    }
+    
+    if (!body.nome) errors.push("O campo 'nome' é obrigatório");
+    if (!body.email) errors.push("O campo 'email' é obrigatório");
+    if (!body.senha) errors.push("O campo 'senha' é obrigatório");
+    
+    if (body.email && !isValidEmail(body.email)) {
+        errors.push("Email inválido");
+    }
+    
+    if (body.senha && !isValidPassword(body.senha)) {
+        errors.push("Senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais");
+    }
+    
+    return errors;
+}
+
+function isValidId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
+function isValidEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+}
+
+function isValidPassword(password) {
+    const minLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /\d/.test(password);
+    const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
+    
+    return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
 }
 
 module.exports = {

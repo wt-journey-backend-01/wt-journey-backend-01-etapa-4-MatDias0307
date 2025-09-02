@@ -1,62 +1,24 @@
-const jwt = require('jsonwebtoken');
-const usuariosRepository = require('../repositories/usuariosRepository');
+const jwt = require("jsonwebtoken");
 
-const tokenBlacklist = new Set();
+function authMiddleware(req, res, next) {
+  try {
+    const cookieToken = req.cookies?.access_token;
+    const authHeader = req.headers["authorization"];
+    const headerToken = authHeader && authHeader.split(" ")[1];
 
-async function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    const token = cookieToken || headerToken;
 
     if (!token) {
-        return res.status(401).json({
-            status: 401,
-            message: "Token de acesso requerido"
-        });
+      return res.status(401).json({ status: 401, message: "Token não fornecido" });
     }
 
-    if (tokenBlacklist.has(token)) {
-        return res.status(401).json({
-            status: 401,
-            message: "Token inválido"
-        });
-    }
+    const usuario = (req.user = jwt.verify(token, process.env.JWT_SECRET || "secret"));
+    req.user = usuario;
 
-    try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const usuario = await usuariosRepository.findById(decoded.id);
-        
-        if (!usuario) {
-            return res.status(401).json({
-                status: 401,
-                message: "Usuário não encontrado"
-            });
-        }
-
-        req.user = usuario;
-        next();
-    } catch (error) {
-        if (error.name === 'TokenExpiredError') {
-            return res.status(401).json({
-                status: 401,
-                message: "Token expirado"
-            });
-        }
-        
-        if (error.name === 'JsonWebTokenError') {
-            return res.status(401).json({
-                status: 401,
-                message: "Token inválido"
-            });
-        }
-
-        return res.status(500).json({
-            status: 500,
-            message: "Erro na autenticação"
-        });
-    }
+    next();
+  } catch (erro) {
+    return res.status(401).json({ status: 401, message: "Token Inválido" });
+  }
 }
 
-module.exports = {
-    authenticateToken,
-    tokenBlacklist
-};
+module.exports = authMiddleware;

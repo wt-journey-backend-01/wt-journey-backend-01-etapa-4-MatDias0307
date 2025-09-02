@@ -1,59 +1,7 @@
-const casosRepository = require("../repositories/casosRepository");
-const agentesRepository = require("../repositories/agentesRepository");
+const casesRepository = require("../repositories/casosRepository");
+const agentsRepository = require("../repositories/agentesRepository");
 
-function validateId(id) {
-    const numId = parseInt(id, 10);
-    return !isNaN(numId) && numId > 0;
-}
-
-function validateCaso(caso, isUpdate = false) {
-    const errors = [];
-
-    if (!isUpdate) {
-        if (!caso.titulo) errors.push("O campo 'titulo' é obrigatório");
-        if (!caso.descricao) errors.push("O campo 'descricao' é obrigatório");
-        if (!caso.status) errors.push("O campo 'status' é obrigatório");
-        if (!caso.agente_id) errors.push("O campo 'agente_id' é obrigatório");
-    }
-
-    if (caso.status && !['aberto', 'solucionado'].includes(caso.status)) {
-        errors.push("O campo 'status' pode ser somente 'aberto' ou 'solucionado'");
-    }
-
-    if (caso.titulo && typeof caso.titulo !== "string") {
-        errors.push("O campo 'titulo' deve ser uma string");
-    }
-    if (caso.descricao && typeof caso.descricao !== "string") {
-        errors.push("O campo 'descricao' deve ser uma string");
-    }
-
-    return errors;
-}
-
-function validateCasoPartial(caso) {
-    const errors = [];
-
-    if (Object.keys(caso).length === 0) {
-        errors.push("Payload não pode estar vazio");
-        return errors;
-    }
-
-    if (caso.status && !['aberto', 'solucionado'].includes(caso.status)) {
-        errors.push("O campo 'status' pode ser somente 'aberto' ou 'solucionado'");
-    }
-
-    if (caso.titulo && typeof caso.titulo !== "string") {
-        errors.push("O campo 'titulo' deve ser uma string");
-    }
-
-    if (caso.descricao && typeof caso.descricao !== "string") {
-        errors.push("O campo 'descricao' deve ser uma string");
-    }
-
-    return errors;
-}
-
-async function getAllCasos(req, res) {
+async function getAllCases(req, res) {
     try {
         const { agente_id, status, q } = req.query;
 
@@ -65,16 +13,16 @@ async function getAllCasos(req, res) {
             });
         }
 
-        const casos = await casosRepository.searchWithFilters({ agente_id, status, q });
+        const cases = await casesRepository.searchWithFilters({ agente_id, status, q });
 
-        if (casos.length === 0) {
+        if (cases.length === 0) {
             return res.status(404).json({
                 status: 404,
                 message: "Nenhum caso encontrado para os filtros especificados"
             });
         }
 
-        res.json(casos);
+        res.json(cases);
     } catch (error) {
         res.status(500).json({
             status: 500,
@@ -84,17 +32,17 @@ async function getAllCasos(req, res) {
     }
 }
 
-async function getCasoById(req, res) {
+async function getCaseById(req, res) {
     try {
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
 
-        const caso = await casosRepository.findById(req.params.id);
-        if (!caso) {
+        const caseData = await casesRepository.findById(req.params.id);
+        if (!caseData) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Caso não encontrado" 
@@ -102,11 +50,11 @@ async function getCasoById(req, res) {
         }
 
         if (req.query.includeAgente === 'true') {
-            const agente = await agentesRepository.findById(caso.agente_id);
-            return res.json({ ...caso, agente });
+            const agent = await agentsRepository.findById(caseData.agente_id);
+            return res.json({ ...caseData, agente: agent });
         }
 
-        res.json(caso);
+        res.json(caseData);
     } catch (error) {
         res.status(500).json({ 
             status: 500,
@@ -116,9 +64,9 @@ async function getCasoById(req, res) {
     }
 }
 
-async function createCaso(req, res) {
+async function createCase(req, res) {
     try {
-        const errors = validateCaso(req.body);
+        const errors = validateCase(req.body);
         if (errors.length > 0) {
             return res.status(400).json({ 
                 status: 400,
@@ -127,8 +75,8 @@ async function createCaso(req, res) {
             });
         }
 
-        const agenteExiste = await agentesRepository.findById(req.body.agente_id);
-        if (!agenteExiste) {
+        const agentExists = await agentsRepository.findById(req.body.agente_id);
+        if (!agentExists) {
             return res.status(404).json({
                 status: 404,
                 message: "Recurso não encontrado",
@@ -136,17 +84,17 @@ async function createCaso(req, res) {
             });
         }
 
-        const novoCaso = await casosRepository.create(req.body);
+        const newCase = await casesRepository.create(req.body);
 
         res.status(201).json({
             status: 201,
             message: "Caso criado com sucesso",
             data: {
-                id: novoCaso.id,
-                titulo: novoCaso.titulo,
-                descricao: novoCaso.descricao,
-                status: novoCaso.status,
-                agente_id: novoCaso.agente_id
+                id: newCase.id,
+                titulo: newCase.titulo,
+                descricao: newCase.descricao,
+                status: newCase.status,
+                agente_id: newCase.agente_id
             }
         });
     } catch (error) {
@@ -158,7 +106,7 @@ async function createCaso(req, res) {
     }
 }
 
-async function updateCaso(req, res) {
+async function updateCase(req, res) {
     try {
         if (req.body.id !== undefined) {
             return res.status(400).json({
@@ -168,7 +116,7 @@ async function updateCaso(req, res) {
             });
         }
 
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
@@ -182,7 +130,7 @@ async function updateCaso(req, res) {
             });
         }
 
-        const errors = validateCaso(req.body, false);
+        const errors = validateCase(req.body, false);
         if (errors.length > 0) {
             return res.status(400).json({
                 status: 400,
@@ -192,8 +140,8 @@ async function updateCaso(req, res) {
         }
 
         if (req.body.agente_id) {
-            const agenteExiste = await agentesRepository.findById(req.body.agente_id);
-            if (!agenteExiste) {
+            const agentExists = await agentsRepository.findById(req.body.agente_id);
+            if (!agentExists) {
                 return res.status(404).json({
                     status: 404,
                     message: "Agente não encontrado"
@@ -201,9 +149,9 @@ async function updateCaso(req, res) {
             }
         }
 
-        const casoAtualizado = await casosRepository.update(req.params.id, req.body);
-        if (casoAtualizado) {
-            res.json(casoAtualizado);
+        const updatedCase = await casesRepository.update(req.params.id, req.body);
+        if (updatedCase) {
+            res.json(updatedCase);
         } else {
             res.status(404).json({ 
                 status: 404,
@@ -219,7 +167,7 @@ async function updateCaso(req, res) {
     }
 }
 
-async function patchCaso(req, res) {
+async function patchCase(req, res) {
     try {
         if (req.body.id !== undefined) {
             return res.status(400).json({
@@ -229,7 +177,7 @@ async function patchCaso(req, res) {
             });
         }
 
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
@@ -244,8 +192,8 @@ async function patchCaso(req, res) {
             });
         }
 
-        const casoExistente = await casosRepository.findById(req.params.id);
-        if (!casoExistente) {
+        const existingCase = await casesRepository.findById(req.params.id);
+        if (!existingCase) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Recurso não encontrado",
@@ -254,8 +202,8 @@ async function patchCaso(req, res) {
         }
 
         if (req.body.agente_id) {
-            const agenteExiste = await agentesRepository.findById(req.body.agente_id);
-            if (!agenteExiste) {
+            const agentExists = await agentsRepository.findById(req.body.agente_id);
+            if (!agentExists) {
                 return res.status(404).json({
                     status: 404,
                     message: "Recurso não encontrado",
@@ -264,7 +212,7 @@ async function patchCaso(req, res) {
             }
         }
 
-        const errors = validateCasoPartial(req.body);
+        const errors = validateCasePartial(req.body);
         if (errors.length > 0) {
             return res.status(400).json({
                 status: 400,
@@ -273,8 +221,8 @@ async function patchCaso(req, res) {
             });
         }
 
-        const casoAtualizado = await casosRepository.update(req.params.id, req.body);
-        res.json(casoAtualizado);
+        const updatedCase = await casesRepository.update(req.params.id, req.body);
+        res.json(updatedCase);
     } catch (error) {
         res.status(500).json({ 
             status: 500,
@@ -284,24 +232,24 @@ async function patchCaso(req, res) {
     }
 }
 
-async function deleteCaso(req, res) {
+async function deleteCase(req, res) {
     try {
-        if (!validateId(req.params.id)) {
+        if (!isValidId(req.params.id)) {
             return res.status(400).json({
                 status: 400,
                 message: "ID inválido"
             });
         }
         
-        const casoExistente = await casosRepository.findById(req.params.id);
-        if (!casoExistente) {
+        const existingCase = await casesRepository.findById(req.params.id);
+        if (!existingCase) {
             return res.status(404).json({ 
                 status: 404,
                 message: "Caso não encontrado" 
             });
         }
 
-        await casosRepository.remove(req.params.id);
+        await casesRepository.remove(req.params.id);
         res.status(204).end();
     } catch (error) {
         res.status(500).json({ 
@@ -312,11 +260,63 @@ async function deleteCaso(req, res) {
     }
 }
 
+function isValidId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
+function validateCase(caseData, isUpdate = false) {
+    const errors = [];
+
+    if (!isUpdate) {
+        if (!caseData.titulo) errors.push("O campo 'titulo' é obrigatório");
+        if (!caseData.descricao) errors.push("O campo 'descricao' é obrigatório");
+        if (!caseData.status) errors.push("O campo 'status' é obrigatório");
+        if (!caseData.agente_id) errors.push("O campo 'agente_id' é obrigatório");
+    }
+
+    if (caseData.status && !['aberto', 'solucionado'].includes(caseData.status)) {
+        errors.push("O campo 'status' pode ser somente 'aberto' ou 'solucionado'");
+    }
+
+    if (caseData.titulo && typeof caseData.titulo !== "string") {
+        errors.push("O campo 'titulo' deve ser uma string");
+    }
+    if (caseData.descricao && typeof caseData.descricao !== "string") {
+        errors.push("O campo 'descricao' deve ser uma string");
+    }
+
+    return errors;
+}
+
+function validateCasePartial(caseData) {
+    const errors = [];
+
+    if (Object.keys(caseData).length === 0) {
+        errors.push("Payload não pode estar vazio");
+        return errors;
+    }
+
+    if (caseData.status && !['aberto', 'solucionado'].includes(caseData.status)) {
+        errors.push("O campo 'status' pode ser somente 'aberto' ou 'solucionado'");
+    }
+
+    if (caseData.titulo && typeof caseData.titulo !== "string") {
+        errors.push("O campo 'titulo' deve ser uma string");
+    }
+
+    if (caseData.descricao && typeof caseData.descricao !== "string") {
+        errors.push("O campo 'descricao' deve ser uma string");
+    }
+
+    return errors;
+}
+
 module.exports = {
-    getAllCasos,
-    getCasoById,
-    createCaso,
-    updateCaso,
-    patchCaso,
-    deleteCaso
+    getAllCases,
+    getCaseById,
+    createCase,
+    updateCase,
+    patchCase,
+    deleteCase
 };

@@ -18,6 +18,35 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *       type: http
  *       scheme: bearer
  *       bearerFormat: JWT
+ *   schemas:
+ *     Caso:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: ID do caso
+ *         titulo:
+ *           type: string
+ *           description: Título do caso
+ *         descricao:
+ *           type: string
+ *           description: Descrição detalhada do caso
+ *         status:
+ *           type: string
+ *           enum: [aberto, solucionado]
+ *           description: Status do caso
+ *         agente_id:
+ *           type: integer
+ *           description: ID do agente responsável
+ *         data:
+ *           type: string
+ *           format: date
+ *           description: Data do caso (YYYY-MM-DD)
+ *       required:
+ *         - titulo
+ *         - descricao
+ *         - status
+ *         - agente_id
  */
 
 /**
@@ -32,7 +61,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *       - in: query
  *         name: agente_id
  *         schema:
- *           type: string
+ *           type: integer
  *         description: Filtro por ID do agente responsável
  *       - in: query
  *         name: status
@@ -54,10 +83,14 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Caso'
+ *       400:
+ *         description: Parâmetros inválidos
  *       401:
  *         description: Não autorizado
+ *       404:
+ *         description: Nenhum caso encontrado
  */
-router.get('/', authMiddleware.authenticateToken, casosController.getAllCasos);
+router.get('/', authMiddleware, casosController.getAllCases);
 
 /**
  * @swagger
@@ -71,7 +104,7 @@ router.get('/', authMiddleware.authenticateToken, casosController.getAllCasos);
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do caso
  *       - in: query
@@ -87,12 +120,14 @@ router.get('/', authMiddleware.authenticateToken, casosController.getAllCasos);
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Caso'
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Caso não encontrado
  */
-router.get('/:id', authMiddleware.authenticateToken, casosController.getCasoById);
+router.get('/:id', authMiddleware, casosController.getCaseById);
 
 /**
  * @swagger
@@ -114,13 +149,22 @@ router.get('/:id', authMiddleware.authenticateToken, casosController.getCasoById
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Caso'
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Caso'
  *       400:
  *         description: Dados inválidos
  *       401:
  *         description: Não autorizado
+ *       404:
+ *         description: Agente não encontrado
  */
-router.post('/', authMiddleware.authenticateToken, casosController.createCaso);
+router.post('/', authMiddleware, casosController.createCase);
 
 /**
  * @swagger
@@ -134,7 +178,7 @@ router.post('/', authMiddleware.authenticateToken, casosController.createCaso);
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do caso
  *     requestBody:
@@ -157,7 +201,7 @@ router.post('/', authMiddleware.authenticateToken, casosController.createCaso);
  *       404:
  *         description: Caso não encontrado
  */
-router.put('/:id', authMiddleware.authenticateToken, casosController.updateCaso);
+router.put('/:id', authMiddleware, casosController.updateCase);
 
 /**
  * @swagger
@@ -171,7 +215,7 @@ router.put('/:id', authMiddleware.authenticateToken, casosController.updateCaso)
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do caso
  *     requestBody:
@@ -179,7 +223,20 @@ router.put('/:id', authMiddleware.authenticateToken, casosController.updateCaso)
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Caso'
+ *             type: object
+ *             properties:
+ *               titulo:
+ *                 type: string
+ *               descricao:
+ *                 type: string
+ *               status:
+ *                 type: string
+ *                 enum: [aberto, solucionado]
+ *               agente_id:
+ *                 type: integer
+ *               data:
+ *                 type: string
+ *                 format: date
  *     responses:
  *       200:
  *         description: Caso atualizado parcialmente
@@ -187,12 +244,14 @@ router.put('/:id', authMiddleware.authenticateToken, casosController.updateCaso)
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Caso'
+ *       400:
+ *         description: Dados inválidos
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Caso não encontrado
  */
-router.patch('/:id', authMiddleware.authenticateToken, casosController.patchCaso);
+router.patch('/:id', authMiddleware, casosController.patchCase);
 
 /**
  * @swagger
@@ -206,17 +265,19 @@ router.patch('/:id', authMiddleware.authenticateToken, casosController.patchCaso
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do caso
  *     responses:
  *       204:
  *         description: Caso removido com sucesso
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Caso não encontrado
  */
-router.delete('/:id', authMiddleware.authenticateToken, casosController.deleteCaso);
+router.delete('/:id', authMiddleware, casosController.deleteCase);
 
 module.exports = router;

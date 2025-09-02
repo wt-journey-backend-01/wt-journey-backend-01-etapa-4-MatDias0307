@@ -18,6 +18,28 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *       type: http
  *       scheme: bearer
  *       bearerFormat: JWT
+ *   schemas:
+ *     Agente:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: ID do agente
+ *         nome:
+ *           type: string
+ *           description: Nome do agente
+ *         dataDeIncorporacao:
+ *           type: string
+ *           format: date
+ *           description: Data de incorporação (YYYY-MM-DD)
+ *         cargo:
+ *           type: string
+ *           enum: [delegado, inspetor, detetive]
+ *           description: Cargo do agente
+ *       required:
+ *         - nome
+ *         - dataDeIncorporacao
+ *         - cargo
  */
 
 /**
@@ -33,12 +55,14 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *         name: cargo
  *         schema:
  *           type: string
- *         description: Filtro por cargo (inspetor, delegado, etc.)
+ *           enum: [delegado, inspetor, detetive]
+ *         description: Filtro por cargo
  *       - in: query
  *         name: sort
  *         schema:
  *           type: string
- *         description: Ordenação por data de incorporação (dataDeIncorporacao ou -dataDeIncorporacao)
+ *           enum: [dataDeIncorporacao, -dataDeIncorporacao]
+ *         description: Ordenação por data de incorporação
  *     responses:
  *       200:
  *         description: Lista de agentes
@@ -48,10 +72,12 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Agente'
+ *       400:
+ *         description: Parâmetros inválidos
  *       401:
  *         description: Não autorizado
  */
-router.get('/', authMiddleware.authenticateToken, agentesController.getAllAgentes);
+router.get('/', authMiddleware, agentesController.getAllAgents);
 
 /**
  * @swagger
@@ -65,7 +91,7 @@ router.get('/', authMiddleware.authenticateToken, agentesController.getAllAgente
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do agente
  *     responses:
@@ -75,12 +101,14 @@ router.get('/', authMiddleware.authenticateToken, agentesController.getAllAgente
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Agente'
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Agente não encontrado
  */
-router.get('/:id', authMiddleware.authenticateToken, agentesController.getAgenteById);
+router.get('/:id', authMiddleware, agentesController.getAgentById);
 
 /**
  * @swagger
@@ -102,13 +130,20 @@ router.get('/:id', authMiddleware.authenticateToken, agentesController.getAgente
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/Agente'
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Agente'
  *       400:
  *         description: Dados inválidos
  *       401:
  *         description: Não autorizado
  */
-router.post('/', authMiddleware.authenticateToken, agentesController.createAgente);
+router.post('/', authMiddleware, agentesController.createAgent);
 
 /**
  * @swagger
@@ -122,7 +157,7 @@ router.post('/', authMiddleware.authenticateToken, agentesController.createAgent
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do agente
  *     requestBody:
@@ -145,7 +180,7 @@ router.post('/', authMiddleware.authenticateToken, agentesController.createAgent
  *       404:
  *         description: Agente não encontrado
  */
-router.put('/:id', authMiddleware.authenticateToken, agentesController.updateAgente);
+router.put('/:id', authMiddleware, agentesController.updateAgent);
 
 /**
  * @swagger
@@ -159,7 +194,7 @@ router.put('/:id', authMiddleware.authenticateToken, agentesController.updateAge
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do agente
  *     requestBody:
@@ -167,7 +202,16 @@ router.put('/:id', authMiddleware.authenticateToken, agentesController.updateAge
  *       content:
  *         application/json:
  *           schema:
- *             $ref: '#/components/schemas/Agente'
+ *             type: object
+ *             properties:
+ *               nome:
+ *                 type: string
+ *               dataDeIncorporacao:
+ *                 type: string
+ *                 format: date
+ *               cargo:
+ *                 type: string
+ *                 enum: [delegado, inspetor, detetive]
  *     responses:
  *       200:
  *         description: Agente atualizado parcialmente
@@ -175,12 +219,14 @@ router.put('/:id', authMiddleware.authenticateToken, agentesController.updateAge
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Agente'
+ *       400:
+ *         description: Dados inválidos
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Agente não encontrado
  */
-router.patch('/:id', authMiddleware.authenticateToken, agentesController.patchAgente);
+router.patch('/:id', authMiddleware, agentesController.patchAgent);
 
 /**
  * @swagger
@@ -194,18 +240,20 @@ router.patch('/:id', authMiddleware.authenticateToken, agentesController.patchAg
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do agente
  *     responses:
  *       204:
  *         description: Agente removido com sucesso
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Agente não encontrado
  */
-router.delete('/:id', authMiddleware.authenticateToken, agentesController.deleteAgente);
+router.delete('/:id', authMiddleware, agentesController.deleteAgent);
 
 /**
  * @swagger
@@ -219,9 +267,14 @@ router.delete('/:id', authMiddleware.authenticateToken, agentesController.delete
  *       - in: path
  *         name: id
  *         schema:
- *           type: string
+ *           type: integer
  *         required: true
  *         description: ID do agente
+ *       - in: query
+ *         name: includeAgente
+ *         schema:
+ *           type: boolean
+ *         description: Incluir dados completos do agente
  *     responses:
  *       200:
  *         description: Lista de casos do agente
@@ -231,11 +284,13 @@ router.delete('/:id', authMiddleware.authenticateToken, agentesController.delete
  *               type: array
  *               items:
  *                 $ref: '#/components/schemas/Caso'
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
  *       404:
  *         description: Agente não encontrado
  */
-router.get('/:id/casos', authMiddleware.authenticateToken, agentesController.getCasosByAgenteId);
+router.get('/:id/casos', authMiddleware, agentesController.getCasesByAgentId);
 
 module.exports = router;

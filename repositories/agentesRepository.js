@@ -1,77 +1,67 @@
 const db = require('../db/db');
 
 async function findAll() {
-  return await db('agentes').select('*');
+  const agents = await db("agentes");
+  return agents.map(mapAgent);
 }
 
 async function findById(id) {
-  return await db('agentes').where({ id }).first();
+  const found = await db("agentes").where({ id: Number(id) }).first();
+  return found ? mapAgent(found) : null;
 }
 
-async function create(agente) {
-  const { id: _, ...dados } = agente;
-
-  const [novoAgente] = await db('agentes')
-    .insert(dados)
-    .returning('*');
-
-  return novoAgente;
+async function create(agent) {
+  const [created] = await db("agentes").insert(agent).returning("*");
+  return mapAgent(created);
 }
 
-async function update(id, agenteAtualizado) {
-  const { id: _, ...dadosSemId } = agenteAtualizado;
-
-  const [agenteAtualizadoDb] = await db('agentes')
-    .where({ id })
-    .update(dadosSemId)
-    .returning('*');
-
-  return agenteAtualizadoDb || null;
+async function update(updatedData, id) {
+  const [updated] = await db("agentes").where({ id: Number(id) }).update(updatedData).returning("*");
+  return updated ? mapAgent(updated) : null;
 }
 
 async function remove(id) {
-  const deletedCount = await db('agentes').where({ id }).del();
-  return deletedCount > 0;
+  return db("agentes").where({ id: Number(id) }).del();
 }
 
 async function findByCargo(cargo) {
-  return await db('agentes').where('cargo', 'ilike', cargo);
+  const agents = await db("agentes").where("cargo", "ilike", cargo);
+  return agents.map(mapAgent);
 }
 
-async function sortByIncorporacao(order = 'asc') {
-  return await db('agentes')
-    .select('*')
-    .orderBy('dataDeIncorporacao', order === 'asc' ? 'asc' : 'desc');
+async function sortByIncorporacao(order = "asc") {
+  const agents = await db("agentes").orderBy("dataDeIncorporacao", order === "asc" ? "asc" : "desc");
+  return agents.map(mapAgent);
 }
 
 async function findFiltered({ cargo, sort } = {}) {
-  const qb = db('agentes');
+  const qb = db("agentes");
 
   if (cargo) {
-    const cargoLower = cargo.toLowerCase();
-    qb.whereRaw('LOWER(cargo) = ?', [cargoLower]);
+    qb.whereRaw("LOWER(cargo) = ?", [cargo.toLowerCase()]);
   }
 
   if (sort) {
-    const field = 'dataDeIncorporacao';
-    const order = sort.startsWith('-') ? 'desc' : 'asc';
-    
-    qb.orderBy(field, order);
+    qb.orderBy("dataDeIncorporacao", sort.startsWith("-") ? "desc" : "asc");
   }
 
-  return await qb.select('*');
-}
-
-function queryAll() {
-  return db('agentes');
-}
-
-function queryByCargo(cargo) {
-  return db('agentes').where('cargo', 'ilike', cargo);
+  const agents = await qb.select("*");
+  return agents.map(mapAgent);
 }
 
 async function getCasosByAgenteId(agenteId) {
-  return await db('casos').where({ agente_id: agenteId });
+  const casos = await db("casos").where({ agente_id: agenteId });
+  return casos.map((caso) =>
+    caso.data ? { ...caso, data: formatDate(caso.data) } : caso
+  );
+}
+
+function formatDate(date) {
+  return new Date(date).toISOString().split("T")[0];
+}
+
+function mapAgent(agent) {
+  return { ...agent, dataDeIncorporacao: formatDate(agent.dataDeIncorporacao) };
 }
 
 module.exports = {
@@ -82,8 +72,6 @@ module.exports = {
   remove,
   findByCargo,
   sortByIncorporacao,
-  findFiltered,     
-  queryAll,
-  queryByCargo,
-  getCasosByAgenteId
+  findFiltered,
+  getCasosByAgenteId,
 };

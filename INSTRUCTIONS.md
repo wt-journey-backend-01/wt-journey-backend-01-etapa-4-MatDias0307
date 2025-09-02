@@ -77,8 +77,7 @@ Resposta (201):
     "data": {
         "id": 1,
         "nome": "Matheus",
-        "email": "matheus@example.com",
-        "created_at": "2025-08-21T12:00:00Z"
+        "email": "matheus@example.com"
     }
 }
 ```
@@ -155,8 +154,7 @@ Resposta (200):
     "data": {
         "id": 1,
         "nome": "Matheus",
-        "email": "matheus@example.com",
-        "created_at": "2025-08-21T12:00:00Z"
+        "email": "matheus@example.com"
     }
 }
 ```

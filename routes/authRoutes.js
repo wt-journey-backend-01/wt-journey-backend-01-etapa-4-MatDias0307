@@ -18,6 +18,23 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *       type: http
  *       scheme: bearer
  *       bearerFormat: JWT
+ *   schemas:
+ *     Usuario:
+ *       type: object
+ *       properties:
+ *         id:
+ *           type: integer
+ *           description: ID do usuário
+ *         nome:
+ *           type: string
+ *           description: Nome do usuário
+ *         email:
+ *           type: string
+ *           format: email
+ *           description: Email do usuário
+ *       required:
+ *         - nome
+ *         - email
  */
 
 /**
@@ -39,15 +56,44 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *             properties:
  *               nome:
  *                 type: string
+ *                 description: Nome completo do usuário
  *               email:
  *                 type: string
+ *                 format: email
+ *                 description: Email do usuário
  *               senha:
  *                 type: string
+ *                 format: password
+ *                 description: Senha (mínimo 8 caracteres com maiúsculas, minúsculas, números e caracteres especiais)
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '#/components/schemas/Usuario'
  *       400:
  *         description: Dados inválidos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 errors:
+ *                   type: array
+ *                   items:
+ *                     type: string
  */
 router.post('/register', authController.register);
 
@@ -69,8 +115,12 @@ router.post('/register', authController.register);
  *             properties:
  *               email:
  *                 type: string
+ *                 format: email
+ *                 description: Email do usuário
  *               senha:
  *                 type: string
+ *                 format: password
+ *                 description: Senha do usuário
  *     responses:
  *       200:
  *         description: Login realizado com sucesso
@@ -81,6 +131,9 @@ router.post('/register', authController.register);
  *               properties:
  *                 access_token:
  *                   type: string
+ *                   description: Token JWT para autenticação
+ *       400:
+ *         description: Email e senha são obrigatórios
  *       401:
  *         description: Credenciais inválidas
  */
@@ -97,10 +150,19 @@ router.post('/login', authController.login);
  *     responses:
  *       200:
  *         description: Logout realizado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: integer
+ *                 message:
+ *                   type: string
  *       401:
  *         description: Não autorizado
  */
-router.post('/logout', authMiddleware.authenticateToken, authController.logout);
+router.post('/logout', authMiddleware, authController.logout);
 
 /**
  * @swagger
@@ -120,16 +182,20 @@ router.post('/logout', authMiddleware.authenticateToken, authController.logout);
  *     responses:
  *       204:
  *         description: Usuário excluído com sucesso
+ *       400:
+ *         description: ID inválido
  *       401:
  *         description: Não autorizado
+ *       403:
+ *         description: Permissão negada
  *       404:
  *         description: Usuário não encontrado
  */
-router.delete('/usuarios/:id', authMiddleware.authenticateToken, authController.deleteUser);
+router.delete('/usuarios/:id', authMiddleware, authController.deleteUser);
 
 /**
  * @swagger
- * /auth/usuarios/me:
+ * /auth/me:
  *   get:
  *     summary: Retorna informações do usuário autenticado
  *     tags: [Autenticação]
@@ -143,18 +209,15 @@ router.delete('/usuarios/:id', authMiddleware.authenticateToken, authController.
  *             schema:
  *               type: object
  *               properties:
- *                 id:
+ *                 status:
  *                   type: integer
- *                 nome:
- *                   type: string
- *                 email:
- *                   type: string
- *                 created_at:
- *                   type: string
- *                   format: date-time
+ *                 data:
+ *                   $ref: '#/components/schemas/Usuario'
  *       401:
  *         description: Não autorizado
+ *       404:
+ *         description: Usuário não encontrado
  */
-router.get('/usuarios/me', authMiddleware.authenticateToken, authController.getMe);
+router.get('/me', authMiddleware, authController.getMe);
 
 module.exports = router;
