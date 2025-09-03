@@ -14,17 +14,13 @@ const { errorHandler } = require("./utils/errorHandler.js");
 
 app.use(express.json());
 
-// Rotas da API
 app.use(authRoutes);
 app.use("/agentes", authMiddleware, agentesRoutes);
 app.use("/casos", authMiddleware, casosRoutes);
 
-// Configuração do Swagger para documentação
 setupSwagger(app);
 app.use(errorHandler);
 
-// Inicia o servidor
 app.listen(port, () => {
   console.log(`\nServidor do departamento de polícia rodando em http://localhost:${port}`);
-  console.log(`Documentação da API disponível em http://localhost:${port}/api-docs`);
 });

@@ -1,28 +1,31 @@
 const db = require("../db/db.js");
 
-// ----- Encontrar Usuário Cadastrado -----
-async function encontrar(email) {
-  const encontrado = await db("usuarios").where({ email }).first();
-  return encontrado;
+async function find(email) {
+  const user = await db("usuarios")
+    .where({ email })
+    .first();
+  
+  return user;
 }
 
-// ----- Registrar um Usuário no Sistema -----
-async function registrar(usuario) {
-  const [registrado] = await db("usuarios").insert(usuario).returning("*");
-  return registrado;
+async function create(user) {
+  const [createdUser] = await db("usuarios")
+    .insert(user)
+    .returning("*");
+  
+  return createdUser;
 }
 
-// ----- Deletar a Conta de um Usuário -----
-async function deletar(id) {
-  const deletado = await db("usuarios")
+async function remove(id) {
+  const deleted = await db("usuarios")
     .where({ id: Number(id) })
     .del();
-  return deletado;
+  
+  return deleted;
 }
 
-// ----- Exports -----
 module.exports = {
-  encontrar,
-  registrar,
-  deletar,
+  find,
+  create,
+  remove
 };

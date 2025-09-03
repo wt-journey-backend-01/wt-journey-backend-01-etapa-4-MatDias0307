@@ -1,213 +1,237 @@
 const casosRepository = require("../repositories/casosRepository.js");
 const agentesRepository = require("../repositories/agentesRepository.js");
-const intPos = /^\d+$/; // Regex para aceitar número inteiro positivos
+const positiveIntegerRegex = /^\d+$/;
 
-// Mostrar Todos os Casos
-async function listarCasos(req, res) {
+const allowedStatusValues = ["aberto", "solucionado"];
+const allowedFields = ["titulo", "descricao", "status", "agente_id"];
+
+function validateCaseData(data, isPartial = false) {
+  const errors = {};
+  const fields = Object.keys(data);
+
+  const invalidFields = fields.filter(field => !allowedFields.includes(field));
+  if (invalidFields.length > 0) {
+    errors.general = "O caso deve conter apenas os campos 'titulo', 'descricao', 'status' e 'agente_id'";
+  }
+
+  if (data.id) {
+    errors.id = "Não é permitido alterar o ID de um caso.";
+  }
+
+  if (!isPartial) {
+    if (!data.titulo) errors.titulo = "O campo 'titulo' é obrigatório";
+    if (!data.descricao) errors.descricao = "O campo 'descricao' é obrigatório";
+    if (!data.status) errors.status = "O campo 'status' é obrigatório";
+    if (!data.agente_id) errors.agente_id = "O campo 'agente_id' é obrigatório";
+  }
+
+  if (data.status && !allowedStatusValues.includes(data.status)) {
+    errors.status = "O Status deve ser 'aberto' ou 'solucionado'";
+  }
+
+  if (data.agente_id && !positiveIntegerRegex.test(data.agente_id)) {
+    errors.agente_id = "O agente_id deve ter um padrão válido";
+  }
+
+  return errors;
+}
+
+async function listCases(req, res) {
   try {
-    const casos = await casosRepository.listar();
-    res.status(200).json(casos);
+    const cases = await casosRepository.list();
+    res.status(200).json(cases);
   } catch (error) {
-    console.log("Erro referente a: listarCasos\n");
-    console.log(error);
+    console.log("Error in: listCases\n", error);
     res.status(500).json({ status: 500, message: "Erro interno do servidor" });
   }
 }
 
-// ----- Mostrar Caso Referente ao ID -----
-async function encontrarCaso(req, res) {
+async function findCase(req, res) {
   try {
     const { id } = req.params;
-    if (!intPos.test(id)) {
-      return res.status(404).json({ status: 404, message: "Parâmetros inválidos", error: { id: "O ID deve ter um padrão válido" } });
+    
+    if (!positiveIntegerRegex.test(id)) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: { id: "O ID deve ter um padrão válido" } 
+      });
     }
-    const caso = await casosRepository.encontrar(id);
-    if (!caso) {
+    
+    const caseItem = await casosRepository.find(id);
+    
+    if (!caseItem) {
       return res.status(404).json({ status: 404, message: "Caso não encontrado" });
     }
-    res.status(200).json(caso);
+    
+    res.status(200).json(caseItem);
   } catch (error) {
-    console.log("Erro referente a: encontrarCaso\n");
-    console.log(error);
+    console.log("Error in: findCase\n", error);
     res.status(500).json({ status: 500, message: "Erro interno do servidor" });
   }
 }
 
-// ----- Adicionar Novo Caso -----
-async function adicionarCaso(req, res) {
+async function createCase(req, res) {
   try {
     const { titulo, descricao, status, agente_id } = req.body;
-
-    const erros = {};
-    const camposPermitidos = ["titulo", "descricao", "status", "agente_id"];
-    const campos = Object.keys(req.body);
-
-    if (campos.some((campo) => !camposPermitidos.includes(campo))) {
-      erros.geral = "O caso deve conter apenas os campos 'titulo', 'descricao', 'status' e 'agente_id'";
-    }
-    if (!titulo) erros.titulo = "O campo 'titulo' é obrigatório";
-    if (!descricao) erros.descricao = "O campo 'descricao' é obrigatório";
-    if (!status) erros.status = "O campo 'status' é obrigatório";
-    if (!agente_id) erros.agente_id = "O campo 'agente_id' é obrigatório";
-
-    if (status && status !== "aberto" && status !== "solucionado") {
-      erros.status = "O Status deve ser 'aberto' ou 'solucionado'";
-    }
-    if (agente_id && !intPos.test(agente_id)) {
-      return res.status(404).json({ status: 404, message: "O agente_id deve ter um padrão válido" });
-    }
-    if (Object.keys(erros).length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", error: erros });
+    
+    const errors = validateCaseData(req.body);
+    
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: errors 
+      });
     }
 
-    const agenteDoCaso = await agentesRepository.encontrar(agente_id);
-    if (!agenteDoCaso || Object.keys(agenteDoCaso).length === 0) {
-      return res.status(404).json({ status: 404, message: "O agente com o ID fornecido não foi encontrado" });
+    const agent = await agentesRepository.find(agente_id);
+    if (!agent) {
+      return res.status(404).json({ 
+        status: 404, 
+        message: "O agente com o ID fornecido não foi encontrado" 
+      });
     }
 
-    const novoCaso = { titulo, descricao, status, agente_id };
-    const [casoCriado] = await casosRepository.adicionar(novoCaso);
-    res.status(201).json(casoCriado);
+    const newCase = { titulo, descricao, status, agente_id };
+    const createdCase = await casosRepository.create(newCase);
+    
+    res.status(201).json(createdCase);
   } catch (error) {
-    console.log("Erro referente a: adicionarCaso\n");
-    console.log(error);
+    console.log("Error in: createCase\n", error);
     res.status(500).json({ status: 500, message: "Erro interno do servidor" });
   }
 }
 
-// ----- Atualizar Informações do Caso -----
-async function atualizarCaso(req, res) {
+async function updateCase(req, res) {
   try {
     const { id } = req.params;
-    const { titulo, descricao, status, agente_id, id: bodyId } = req.body;
-    if (!intPos.test(id)) {
-      return res.status(404).json({ status: 404, message: "Parâmetros inválidos", error: { id: "O ID na URL deve ser um padrão válido" } });
+    
+    if (!positiveIntegerRegex.test(id)) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: { id: "O ID na URL deve ser um padrão válido" } 
+      });
     }
 
-    const erros = {};
-    const camposPermitidos = ["titulo", "descricao", "status", "agente_id"];
-    const campos = Object.keys(req.body);
-
-    if (bodyId) {
-      erros.id = "Não é permitido alterar o ID de um caso.";
-    }
-
-    if (campos.some((campo) => !camposPermitidos.includes(campo))) {
-      erros.geral = "O caso deve conter apenas os campos 'titulo', 'descricao', 'status' e 'agente_id'";
-    }
-    if (!titulo) erros.titulo = "O campo 'titulo' é obrigatório";
-    if (!descricao) erros.descricao = "O campo 'descricao' é obrigatório";
-    if (!status) erros.status = "O campo 'status' é obrigatório";
-    if (!agente_id) erros.agente_id = "O campo 'agente_id' é obrigatório";
-
-    if (status && status !== "aberto" && status !== "solucionado") {
-      erros.status = "O Status deve ser 'aberto' ou 'solucionado'";
-    }
-    if (agente_id && !intPos.test(agente_id)) {
-      erros.agente_id = "O agente_id deve ter um padrão válido";
-    } else if (agente_id && !(await agentesRepository.encontrar(agente_id))) {
-      erros.agente_id = "O agente com o ID fornecido não foi encontrado";
-    }
-    if (Object.keys(erros).length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", error: erros });
-    }
-
-    const [casoAtualizado] = await casosRepository.atualizar({ titulo, descricao, status, agente_id }, id);
-    if (!casoAtualizado) {
-      return res.status(404).json({ status: 404, message: "Caso não encontrado" });
-    }
-
-    res.status(200).json(casoAtualizado);
-  } catch (error) {
-    console.log("Erro referente a: atualizarCaso\n");
-    console.log(error);
-    res.status(500).json({ status: 500, message: "Erro interno do servidor" });
-  }
-}
-
-// ----- Atualizar Informações Parciais Caso -----
-async function atualizarCasoParcial(req, res) {
-  try {
-    const { id } = req.params;
-    const { titulo, descricao, status, agente_id, id: bodyId } = req.body;
-    if (!intPos.test(id)) {
-      return res.status(404).json({ status: 404, message: "Parâmetros inválidos", error: { id: "O ID na URL deve ter um padrão válido" } });
-    }
-
-    const erros = {};
-    const camposPermitidos = ["titulo", "descricao", "status", "agente_id"];
-    const campos = Object.keys(req.body);
-
-    if (campos.some((campo) => !camposPermitidos.includes(campo))) {
-      erros.geral = "Campos inválidos enviados. Permitidos: 'titulo', 'descricao', 'status', 'agente_id'";
-    }
-    if (bodyId) {
-      erros.id = "Não é permitido alterar o ID de um caso.";
-    }
-    if (status && status !== "aberto" && status !== "solucionado") {
-      erros.status = "O Status deve ser 'aberto' ou 'solucionado'";
-    }
-
-    if (agente_id) {
-      if (!intPos.test(agente_id)) {
-        erros.agente_id = "O agente_id deve ter um padrão válido";
-      } else if (!(await agentesRepository.encontrar(agente_id))) {
-        erros.agente_id = "O agente com o ID fornecido não foi encontrado";
+    const errors = validateCaseData(req.body);
+    
+    if (req.body.agente_id) {
+      const agent = await agentesRepository.find(req.body.agente_id);
+      if (!agent) {
+        errors.agente_id = "O agente com o ID fornecido não foi encontrado";
       }
     }
 
-    if (Object.keys(erros).length > 0) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", error: erros });
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: errors 
+      });
     }
 
-    const dadosAtualizados = {};
-    if (titulo !== undefined) dadosAtualizados.titulo = titulo;
-    if (descricao !== undefined) dadosAtualizados.descricao = descricao;
-    if (status !== undefined) dadosAtualizados.status = status;
-    if (agente_id !== undefined) dadosAtualizados.agente_id = agente_id;
-
-    if (Object.keys(dadosAtualizados).length === 0) {
-      return res.status(400).json({ status: 400, message: "Nenhum campo válido para atualização foi enviado." });
-    }
-
-    const [casoAtualizado] = await casosRepository.atualizar(dadosAtualizados, id);
-    if (!casoAtualizado) {
+    const updatedCase = await casosRepository.update(req.body, id);
+    
+    if (!updatedCase) {
       return res.status(404).json({ status: 404, message: "Caso não encontrado" });
     }
 
-    res.status(200).json(casoAtualizado);
+    res.status(200).json(updatedCase);
   } catch (error) {
-    console.log("Erro referente a: atualizarCaso\n");
-    console.log(error);
+    console.log("Error in: updateCase\n", error);
     res.status(500).json({ status: 500, message: "Erro interno do servidor" });
   }
 }
 
-// ----- Deletar Caso -----
-async function deletarCaso(req, res) {
+async function partialUpdateCase(req, res) {
   try {
     const { id } = req.params;
-    if (!intPos.test(id)) {
-      return res.status(400).json({ status: 400, message: "Parâmetros inválidos", error: { id: "O ID deve ter um padrão válido" } });
+    
+    if (!positiveIntegerRegex.test(id)) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: { id: "O ID na URL deve ter um padrão válido" } 
+      });
     }
-    const sucesso = await casosRepository.deletar(id);
-    if (sucesso === 0) {
+
+    const errors = validateCaseData(req.body, true);
+    
+    if (req.body.agente_id) {
+      const agent = await agentesRepository.find(req.body.agente_id);
+      if (!agent) {
+        errors.agente_id = "O agente com o ID fornecido não foi encontrado";
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: errors 
+      });
+    }
+
+    const updateData = {};
+    
+    Object.keys(req.body).forEach(key => {
+      if (allowedFields.includes(key) && req.body[key] !== undefined) {
+        updateData[key] = req.body[key];
+      }
+    });
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Nenhum campo válido para atualização foi enviado." 
+      });
+    }
+
+    const updatedCase = await casosRepository.update(updateData, id);
+    
+    if (!updatedCase) {
       return res.status(404).json({ status: 404, message: "Caso não encontrado" });
     }
-    res.status(204).end();
+
+    res.status(200).json(updatedCase);
   } catch (error) {
-    console.log("Erro referente a: deletarCaso\n");
-    console.log(error);
+    console.log("Error in: partialUpdateCase\n", error);
     res.status(500).json({ status: 500, message: "Erro interno do servidor" });
   }
 }
 
-// ----- Exports -----
+async function deleteCase(req, res) {
+  try {
+    const { id } = req.params;
+    
+    if (!positiveIntegerRegex.test(id)) {
+      return res.status(400).json({ 
+        status: 400, 
+        message: "Parâmetros inválidos", 
+        error: { id: "O ID deve ter um padrão válido" } 
+      });
+    }
+    
+    const success = await casosRepository.remove(id);
+    
+    if (success === 0) {
+      return res.status(404).json({ status: 404, message: "Caso não encontrado" });
+    }
+    
+    res.status(204).end();
+  } catch (error) {
+    console.log("Error in: deleteCase\n", error);
+    res.status(500).json({ status: 500, message: "Erro interno do servidor" });
+  }
+}
+
 module.exports = {
-  listarCasos,
-  encontrarCaso,
-  adicionarCaso,
-  atualizarCaso,
-  atualizarCasoParcial,
-  deletarCaso,
+  listCases,
+  findCase,
+  createCase,
+  updateCase,
+  partialUpdateCase,
+  deleteCase,
 };

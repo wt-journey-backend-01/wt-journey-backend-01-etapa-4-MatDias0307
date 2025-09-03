@@ -1,52 +1,56 @@
 const db = require("../db/db.js");
 
-// ----- Mostrar Todos os Agentes -----
-async function listar() {
-  const listado = await db("agentes");
-  return listado.map((agente) => ({ ...agente, dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split("T")[0] }));
+function formatAgentData(agent) {
+  return {
+    ...agent,
+    dataDeIncorporacao: new Date(agent.dataDeIncorporacao).toISOString().split("T")[0]
+  };
 }
 
-// ----- Mostrar Agente Referente ao ID -----
-async function encontrar(id) {
-  const encontrado = await db("agentes")
+async function list() {
+  const agents = await db("agentes");
+  return agents.map(formatAgentData);
+}
+
+async function find(id) {
+  const agent = await db("agentes")
     .where({ id: Number(id) })
     .first();
 
-  if (!encontrado) return null;
-
-  return { ...encontrado, dataDeIncorporacao: new Date(encontrado.dataDeIncorporacao).toISOString().split("T")[0] };
+  if (!agent) return null;
+  return formatAgentData(agent);
 }
 
-// ----- Adicionar Novo Agente -----
-async function adicionar(agente) {
-  const [adicionado] = await db("agentes").insert(agente).returning("*");
-  return { ...adicionado, dataDeIncorporacao: new Date(adicionado.dataDeIncorporacao).toISOString().split("T")[0] };
+async function create(agent) {
+  const [createdAgent] = await db("agentes")
+    .insert(agent)
+    .returning("*");
+  
+  return formatAgentData(createdAgent);
 }
 
-// ----- Atualizar Informações do Agente -----
-async function atualizar(dadosAtualizados, id) {
-  const [atualizado] = await db("agentes")
+async function update(updatedData, id) {
+  const [updatedAgent] = await db("agentes")
     .where({ id: Number(id) })
-    .update(dadosAtualizados)
+    .update(updatedData)
     .returning("*");
 
-  if (!atualizado) return null;
-  return { ...atualizado, dataDeIncorporacao: new Date(atualizado.dataDeIncorporacao).toISOString().split("T")[0] };
+  if (!updatedAgent) return null;
+  return formatAgentData(updatedAgent);
 }
 
-// ----- Deletar Agente -----
-async function deletar(id) {
-  const deletado = await db("agentes")
+async function remove(id) {
+  const deleted = await db("agentes")
     .where({ id: Number(id) })
     .del();
-  return deletado;
+  
+  return deleted;
 }
 
-// ----- Exports -----
 module.exports = {
-  listar,
-  encontrar,
-  adicionar,
-  atualizar,
-  deletar,
+  list,
+  find,
+  create,
+  update,
+  remove
 };

@@ -1,47 +1,47 @@
 const db = require("../db/db.js");
 
-// ----- Mostrar Todos os Casos -----
-async function listar() {
-  const listado = await db("casos");
-  return listado;
+async function list() {
+  const cases = await db("casos");
+  return cases;
 }
 
-// ----- Mostrar Caso Referente ao ID -----
-async function encontrar(id) {
-  const encontrado = await db("casos")
+async function find(id) {
+  const caseItem = await db("casos")
     .where({ id: Number(id) })
     .first();
-  return encontrado;
+  
+  return caseItem;
 }
 
-// ----- Adicionar Novo Caso -----
-async function adicionar(caso) {
-  const adicionado = await db("casos").insert(caso).returning("*");
-  return adicionado;
-}
-
-// ----- Atualizar Informações do Caso -----
-async function atualizar(dadosAtualizados, id) {
-  const atualizado = await db("casos")
-    .where({ id: Number(id) })
-    .update(dadosAtualizados)
+async function create(caseData) {
+  const [createdCase] = await db("casos")
+    .insert(caseData)
     .returning("*");
-  return atualizado;
+  
+  return createdCase;
 }
 
-// ----- Deletar Caso -----
-async function deletar(id) {
-  const deletado = await db("casos")
+async function update(updatedData, id) {
+  const [updatedCase] = await db("casos")
+    .where({ id: Number(id) })
+    .update(updatedData)
+    .returning("*");
+  
+  return updatedCase;
+}
+
+async function remove(id) {
+  const deleted = await db("casos")
     .where({ id: Number(id) })
     .del();
-  return deletado;
+  
+  return deleted;
 }
 
-// ----- Exports -----
 module.exports = {
-  listar,
-  encontrar,
-  adicionar,
-  atualizar,
-  deletar,
+  list,
+  find,
+  create,
+  update,
+  remove
 };
