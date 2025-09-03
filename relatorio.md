@@ -1,260 +1,249 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 5 créditos restantes para usar o sistema de feedback AI.
+Você tem 4 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para MatDias0307:
 
-Nota final: **34.5/100**
+Nota final: **100.0/100**
 
 Olá, MatDias0307! 👋🚀
 
-Primeiramente, parabéns pelo esforço e pela entrega do seu projeto! 🎉 Você conseguiu implementar várias funcionalidades essenciais, como o registro e login de usuários com JWT, logout, exclusão de usuários, além das operações CRUD para agentes e casos. Isso é uma base muito sólida para uma API REST segura e funcional!
+Primeiramente, parabéns pelo excelente trabalho! 🎉 Você alcançou a nota máxima de 100.0/100 nos testes base, o que indica que os requisitos obrigatórios do projeto estão muito bem atendidos. Isso é motivo de orgulho! 👏
 
-Também quero destacar que você conseguiu passar vários testes importantes, incluindo a criação e login de usuários, logout, validação de senhas e emails, e operações básicas de agentes e casos. Isso mostra que seu código tem fundamentos muito bons em segurança, validação e estrutura.
+Além disso, você conseguiu implementar alguns bônus importantes, como:
 
----
-
-### 🎯 Conquistas Bônus que você alcançou
-
-- Implementou a autenticação JWT corretamente, incluindo a geração do token com expiração.
-- Criou o middleware de autenticação que valida o token JWT e protege as rotas.
-- Documentou muito bem os endpoints no INSTRUCTIONS.md e usou Swagger para documentação.
-- Aplicou validações robustas em payloads para usuários, agentes e casos.
-- Usou bcryptjs para hash de senhas e validação correta da senha.
-- Organizou o projeto com uma estrutura de pastas adequada, seguindo o padrão MVC.
-
----
-
-# Agora, vamos analisar os pontos que precisam de atenção para você destravar 100% da sua nota! 🔍
-
-## 1. Testes que falharam e principais causas encontradas
-
-Você teve falha em vários testes relacionados a:
-
-- **Usuários (Users):**  
-  - Recebe erro 400 ao tentar criar usuário com e-mail já em uso.  
-  - **Análise:** Seu código no `authController.register` já trata o erro 23505 do PostgreSQL e retorna 400 com a mensagem "Email já está em uso". Isso está correto.  
-  - **Possível causa:** Pode ser que o teste esteja esperando a mensagem exatamente igual ou uma estrutura JSON específica. Verifique se o retorno está exatamente assim:  
-    ```js
-    return res.status(400).json({
-      status: 400,
-      message: "Email já está em uso"
-    });
-    ```  
-    Se estiver, ótimo! Caso contrário, ajuste para esse formato. Também confira se o campo `email` está sendo normalizado (lowercase e trim) antes da verificação, e isso você fez corretamente.
-
-- **Agentes (Agents):**  
-  - Falhas em criar, listar, buscar por ID, atualizar (PUT e PATCH), deletar agentes, e erros 400, 401 e 404 em vários cenários.  
-  - **Análise:** Seu controller `agentesController.js` está muito bem estruturado, com validações e mensagens customizadas.  
-  - **Possível causa para os erros 401:** Certifique-se que o middleware de autenticação está aplicado corretamente nas rotas de agentes. No seu `server.js` você fez:  
-    ```js
-    app.use("/agentes", authMiddleware, agentesRoutes);
-    ```  
-    Isso está correto.  
-  - **Possível causa para erros 400 e 404:**  
-    - O teste pode estar esperando que o parâmetro `id` seja validado com uma mensagem exata. Seu método `isValidId` está correto e você retorna 400 com "ID inválido".  
-    - Confirme se o payload enviado nas requisições PUT e PATCH está validado com as mensagens esperadas. Você tem funções `validateAgentForCreate` e `validateAgentForUpdate` que parecem robustas.  
-    - Verifique se no `agentesRepository.update` você está retornando o agente atualizado corretamente. Seu código:  
-      ```js
-      const [updated] = await db("agentes").where({ id: Number(id) }).update(updatedData).returning("*");
-      return updated ? mapAgent(updated) : null;
-      ```  
-      Isso está correto.  
-  - **Possível causa para erro 401 ao criar agente sem token:** Isso é esperado, pois o middleware exige token. Portanto, o erro está correto.
-
-- **Casos (Cases):**  
-  - Falhas em criar, listar, buscar por ID, atualizar, deletar casos, e erros 400, 401, 404 em vários cenários.  
-  - **Análise:** Seu controller `casosController.js` e `casosRepository.js` estão bem implementados, com validações e tratamento de erros.  
-  - **Possível causa para erros 404 ao criar caso com agente inválido:** Você verifica se o agente existe antes de criar, retornando 404 se não existir, o que está correto.  
-  - **Possível causa para erros 401:** Middleware aplicado corretamente no `server.js`.  
-  - **Possível causa para erros 400:** Validação no payload também presente.  
-
-- **Testes bônus que falharam:**  
-  - Filtros simples e complexos de agentes e casos, mensagens de erro customizadas para argumentos inválidos, e endpoint `/usuarios/me`.  
-  - **Análise:** Esses são pontos que você ainda não implementou ou não implementou completamente. Por exemplo, o endpoint `/auth/usuarios/me` está documentado, mas o teste indica que talvez o retorno ou a rota não estejam funcionando exatamente como esperado.  
-
----
-
-## 2. Análises Específicas e Recomendações
-
-### 2.1 Erro 400 na criação de usuário com email duplicado
-
-Seu código já trata o erro do banco (código `23505`) e retorna 400 com a mensagem correta:
-
-```js
-if (error.code === '23505') {
-  return res.status(400).json({
-    status: 400,
-    message: "Email já está em uso"
-  });
-}
-```
-
-**Por que o teste pode falhar?**  
-- Talvez o teste espere que o campo `message` seja exatamente esse texto, sem variações.  
-- Ou o teste espera que a verificação do email já em uso seja feita antes da tentativa de inserção (você faz isso com `findByEmail`), mas talvez o problema seja que o email não está sendo normalizado corretamente (trim + lowercase). Você fez isso corretamente:  
-  ```js
-  const normalizedEmail = email.trim().toLowerCase();
-  ```
+- Endpoint `/usuarios/me` para retornar dados do usuário autenticado.
+- Algumas funcionalidades de logout e exclusão de usuário.
+- Proteção das rotas de agentes e casos com middleware de autenticação via JWT.
   
-**Recomendo:**  
-- Verifique se o email está sempre normalizado antes da verificação e inserção.  
-- Confirme se o retorno JSON está exatamente igual ao esperado.  
-- Para entender melhor autenticação e tratamento de erros, recomendo fortemente que você assista a este vídeo, feito pelos meus criadores, que explica conceitos básicos e fundamentais de cibersegurança e autenticação:  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk
+Essas conquistas extras mostram que você está indo além do básico, o que é ótimo para seu aprendizado e para o profissionalismo do seu código! 🌟
 
 ---
 
-### 2.2 Falhas em filtros e buscas complexas de agentes e casos
+## Análise dos Testes Bônus Que Falharam e Pontos de Melhoria
 
-Você implementou o filtro de agentes por cargo e ordenação por data, e filtros de casos por agente_id, status e pesquisa full-text. Porém, os testes bônus falharam indicando que talvez:
+Você teve algumas falhas nos testes bônus relacionados a filtragem e busca avançada, além de mensagens de erro customizadas para argumentos inválidos. Vamos analisar cada grupo para você entender melhor e evoluir ainda mais:
 
-- A ordenação por data de incorporação não esteja funcionando corretamente em ambas as ordens (crescente e decrescente).  
-- Os filtros para casos por status, agente e keywords podem não estar retornando mensagens customizadas quando não encontram resultados.  
+### 1. **Simple Filtering: Filtragem e Busca de Casos e Agentes**
 
-**Dica:**  
-- No `agentesRepository.findFiltered`, você usa:  
-  ```js
-  if (sort) {
-    qb.orderBy("dataDeIncorporacao", sort.startsWith("-") ? "desc" : "asc");
-  }
-  ```  
-  Isso está correto, mas verifique se o parâmetro `sort` está sendo passado exatamente como esperado nos testes (ex: `-dataDeIncorporacao`).  
-- Nos controllers, verifique se você retorna status 404 com mensagem customizada quando não encontrar agentes ou casos para os filtros.  
-- Para aprimorar seu uso do Knex e filtros, veja este vídeo que é um guia detalhado do Knex Query Builder:  
-  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+Testes que falharam:
 
----
+- Filtro de casos por status
+- Busca de agente responsável por caso
+- Filtro de casos por agente
+- Filtro de casos por keywords no título e/ou descrição
+- Busca de casos do agente
 
-### 2.3 Endpoint `/auth/usuarios/me` para dados do usuário autenticado
+**O que isso significa?**
 
-Você implementou o método `getMe` no `authController.js` e a rota no `authRoutes.js`:
+Você implementou a API básica para casos e agentes, mas não implementou (ou não completou) os endpoints que permitem filtrar ou buscar dados com parâmetros específicos, por exemplo:
+
+- `GET /casos?status=aberto`
+- `GET /casos?agente_id=1`
+- `GET /casos?keyword=desaparecimento`
+- `GET /agentes?dataDeIncorporacao=2023-05-11&sort=asc`
+
+Essas funcionalidades exigem que você ajuste os controllers e repositories para receber query params e montar consultas dinâmicas no banco.
+
+**Por que isso é importante?**
+
+Filtros e buscas são essenciais para uma API REST profissional, permitindo que os clientes consultem dados relevantes sem precisar buscar tudo e filtrar no front-end.
+
+**Como melhorar?**
+
+No seu controller de casos, por exemplo, você pode alterar a função `listarCasos` para receber query params e montar a consulta:
 
 ```js
-router.get('/usuarios/me', authMiddleware, authController.getMe);
-```
-
-E no controller:
-
-```js
-async function getMe(req, res) {
-  const user = await usersRepository.findById(req.user.id);
-  if (!user) {
-    return res.status(404).json({ status: 404, message: "Usuário não encontrado" });
+async function listarCasos(req, res) {
+  try {
+    const { status, agente_id, keyword } = req.query;
+    const casos = await casosRepository.listarComFiltros({ status, agente_id, keyword });
+    res.status(200).json(casos);
+  } catch (error) {
+    // tratamento de erro
   }
-  res.json({ status: 200, data: user });
 }
 ```
 
-**Possível problema:**  
-- O teste pode estar esperando que a rota seja `/auth/me` em vez de `/auth/usuarios/me`, ou vice-versa.  
-- A documentação no `INSTRUCTIONS.md` mostra `/auth/usuarios/me`, mas o teste pode esperar `/auth/me`.  
-- Verifique a rota esperada pelos testes e ajuste se necessário.
+E no repositório, usar Knex para montar a query dinamicamente com `.where`, `.andWhere`, `.orWhere` etc.
 
 ---
 
-### 2.4 Middleware de autenticação e proteção das rotas
+### 2. **Complex Filtering: Ordenação e Filtragem Avançada**
 
-Você aplicou corretamente o middleware em `server.js`:
+Testes que falharam:
+
+- Filtragem de agentes por data de incorporação com ordenação crescente e decrescente
+
+**O que está faltando?**
+
+Você precisa implementar um endpoint que permita filtrar agentes pela data de incorporação e ordenar os resultados, por exemplo:
+
+- `GET /agentes?dataDeIncorporacao=2023-05-11&sort=asc`
+
+Isso exige no controller e repository que você interprete os parâmetros e aplique ordenação via `.orderBy` do Knex.
+
+---
+
+### 3. **Custom Error: Mensagens de erro personalizadas para argumentos inválidos**
+
+Testes que falharam:
+
+- Mensagens customizadas para argumentos inválidos em agentes e casos
+
+**Por que isso importa?**
+
+Ter mensagens claras e personalizadas para erros de validação ajuda o usuário da API a entender o que está errado e como corrigir, tornando sua API mais profissional e amigável.
+
+**Como melhorar?**
+
+Nos seus controllers de agentes e casos, você já faz validações, mas pode melhorar as mensagens para serem mais específicas e consistentes. Exemplo:
 
 ```js
-app.use("/agentes", authMiddleware, agentesRoutes);
-app.use("/casos", authMiddleware, casosRoutes);
-app.use('/auth', authRoutes);
+if (!intPos.test(id)) {
+  return res.status(400).json({ status: 400, message: "ID inválido", error: { id: "O ID deve ser um número inteiro positivo" } });
+}
 ```
 
-Isso está correto e deve garantir que rotas de agentes e casos só sejam acessadas com token JWT válido.
+---
+
+### 4. **User Details: Endpoint `/usuarios/me`**
+
+Teste falhou indicando que o endpoint não está retornando os dados do usuário logado corretamente com status 200.
+
+**Análise:**
+
+Você implementou o endpoint `/users/me` na rota e no controller (`exibirUsuario`), o que é ótimo! Porém, pode haver algum detalhe na resposta ou no middleware que impeça o teste de passar.
+
+Verifique se:
+
+- O middleware `authMiddleware` está adicionando corretamente o objeto `req.user`.
+- O controller está buscando o usuário pelo email correto.
+- O status retornado é 200 e o objeto JSON contém `id`, `nome` e `email` (sem a senha).
+- Não há erros silenciosos no middleware ou controller.
 
 ---
 
-### 2.5 Estrutura do projeto e organização dos arquivos
+## Pontos Gerais para Você Observar e Melhorar
 
-Sua estrutura está muito bem organizada e segue o padrão esperado, com pastas `controllers`, `repositories`, `routes`, `middlewares`, `db`, `utils`, etc. Isso é excelente e ajuda muito na manutenção e escalabilidade do projeto.
+### 1. **Middleware de autenticação e uso de cookies**
 
-Se quiser revisar conceitos sobre arquitetura MVC e organização de projetos Node.js, recomendo este vídeo:  
-https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s
-
----
-
-### 2.6 Migrations e seeds
-
-Sua migration para criar a tabela `usuarios` está correta, com os campos `id`, `nome`, `email` e `senha` e constraints adequadas:
+No seu `authMiddleware.js`, você tenta pegar o token tanto do cookie quanto do header:
 
 ```js
-await knex.schema.createTable("usuarios", (table) => {
-  table.increments("id").primary();
-  table.string("nome").notNullable();
-  table.string("email").unique().notNullable();
-  table.string("senha").notNullable();
-});
-```
-
-Se estiver enfrentando problemas com as migrations ou seeds, veja os vídeos para entender como configurar o banco com Docker e Knex:  
-- Configuração PostgreSQL com Docker e Node.js: https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s  
-- Documentação oficial Knex migrations: https://www.youtube.com/watch?v=dXWy_aGCW1E
-
----
-
-## 3. Sugestões de melhorias pontuais no código
-
-### 3.1 No `authController.register`:
-
-Você está enviando o campo `senha` para o repositório, que já faz o hash. Isso está correto.
-
-### 3.2 No middleware `authMiddleware.js`:
-
-Você faz a verificação do header `Authorization` e do token JWT corretamente. Uma pequena melhoria seria validar mais rigorosamente o formato do header, por exemplo:
-
-```js
+const cookieToken = req.cookies?.access_token;
 const authHeader = req.headers["authorization"];
-if (!authHeader || !authHeader.startsWith("Bearer ")) {
-  return res.status(401).json({ status: 401, message: "Token não fornecido" });
-}
-const token = authHeader.split(" ")[1];
+const headerToken = authHeader && authHeader.split(" ")[1];
+
+const token = cookieToken || headerToken;
 ```
 
-Isso evita erros caso o header esteja mal formatado.
+Porém, no seu `server.js`, não há middleware para parsing de cookies (`cookie-parser`), então `req.cookies` provavelmente está `undefined`. Isso pode causar problemas na autenticação via cookie.
+
+**Solução:**
+
+- Instale e configure o middleware `cookie-parser` no seu `server.js`:
+
+```js
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
+```
+
+Isso vai garantir que `req.cookies` seja populado corretamente.
 
 ---
 
-## 4. Resumo rápido dos pontos para focar na melhoria 🚀
+### 2. **Logout**
 
-- [ ] Verifique se o retorno de erro 400 para e-mail duplicado está exatamente conforme esperado (mensagem e formato JSON).  
-- [ ] Confirme que o endpoint `/auth/usuarios/me` está no caminho correto esperado pelos testes (às vezes `/auth/me`).  
-- [ ] Garanta que a filtragem e ordenação de agentes e casos estão funcionando exatamente como os testes pedem, com mensagens customizadas para filtros inválidos e para quando não encontrar resultados.  
-- [ ] Reforce as validações para IDs inválidos (já bem feitas, mas confira se mensagens e status codes estão conformes).  
-- [ ] Confira se o middleware de autenticação está aplicado corretamente em todas as rotas protegidas (no seu caso, está).  
-- [ ] Revise o tratamento de erros e mensagens para garantir que estejam exatamente iguais às esperadas pelos testes automatizados.  
-- [ ] Para aprofundar sua compreensão, assista aos vídeos recomendados sobre autenticação, JWT, bcrypt, Knex e arquitetura MVC.
+No seu controller, o logout apenas faz:
+
+```js
+async function deslogarUsuario(req, res) {
+  try {
+    req.user = undefined;
+    return res.status(204).end();
+  } catch (error) {
+    // erro
+  }
+}
+```
+
+Mas isso não invalida o token JWT nem remove o cookie do cliente.
+
+**Sugestão:**
+
+Para logout efetivo, você pode limpar o cookie no servidor, por exemplo:
+
+```js
+res.clearCookie("access_token", { httpOnly: true, sameSite: "strict" });
+return res.status(204).end();
+```
+
+Assim o token armazenado no cookie será removido.
 
 ---
 
-## 5. Para continuar evoluindo, aqui vão os links que vão te ajudar muito:
+### 3. **Verificação de campos extras**
 
-- Autenticação e segurança (vídeo feito pelos meus criadores, muito didático!):  
-  https://www.youtube.com/watch?v=Q4LQOfYwujk  
-- JWT na prática (como gerar e validar tokens):  
-  https://www.youtube.com/watch?v=keS0JWOypIU  
-- Uso de bcrypt para hash de senhas e validação:  
-  https://www.youtube.com/watch?v=L04Ln97AwoY  
-- Knex Query Builder para filtros e ordenações:  
-  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s  
-- Arquitetura MVC para organizar seu projeto Node.js:  
-  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
-- Configuração do PostgreSQL com Docker e Knex:  
-  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s  
+Você faz uma boa validação para campos extras, por exemplo:
+
+```js
+const camposPermitidos = ["nome", "email", "senha"];
+const campos = Object.keys(req.body);
+
+if (campos.some((campo) => !camposPermitidos.includes(campo))) {
+  return res.status(400).json({ ... });
+}
+```
+
+Isso é ótimo para manter a API segura e consistente.
 
 ---
 
-# Finalizando…
+### 4. **Uso de variáveis de ambiente**
 
-MatDias0307, você está no caminho certo! Seu projeto tem uma base muito boa e a maioria das funcionalidades essenciais está implementada com qualidade. Com alguns ajustes finos nas mensagens de erro, rotas e filtros, você vai conseguir passar todos os testes e entregar uma API REST profissional e segura.
+Você está usando `process.env.JWT_SECRET || "secret"` para o segredo do JWT. Isso é OK para desenvolvimento, mas lembre-se de sempre definir `JWT_SECRET` no `.env` para produção, para não comprometer a segurança.
 
-Continue focando na validação rigorosa dos dados e na aderência aos requisitos do teste, pois isso é o que fará seu código brilhar! 🌟
+---
 
-Se precisar, volte aqui para tirar dúvidas e revisar seu código. Estou torcendo pelo seu sucesso! 💪🚓🚨
+### 5. **Estrutura de diretórios**
 
-Um abraço e bons códigos! 👨‍💻👩‍💻✨
+Sua estrutura está de acordo com o esperado, incluindo os novos arquivos para autenticação (`authRoutes.js`, `authController.js`, `usuariosRepository.js`, `authMiddleware.js`).
+
+---
+
+## Recursos Recomendados para Você Aprimorar Ainda Mais
+
+- Para entender melhor autenticação com JWT e bcrypt, recomendo muito este vídeo, feito pelos meus criadores, que fala muito bem sobre o assunto: https://www.youtube.com/watch?v=L04Ln97AwoY
+
+- Para aprofundar em JWT na prática, este vídeo é excelente: https://www.youtube.com/watch?v=keS0JWOypIU
+
+- Para implementar filtros dinâmicos e ordenação com Knex, este guia do Knex Query Builder vai te ajudar bastante: https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s
+
+- Para garantir que o cookie-parser está corretamente configurado no Express, veja este tutorial: https://www.youtube.com/watch?v=Q4LQOfYwujk (é um vídeo geral sobre autenticação, mas aborda middleware e cookies).
+
+---
+
+## Resumo Rápido para Focar
+
+- [ ] Implementar endpoints de filtragem e busca para casos e agentes usando query params e Knex.
+- [ ] Implementar ordenação (asc/desc) para listagem de agentes por data de incorporação.
+- [ ] Melhorar mensagens de erro customizadas para parâmetros inválidos.
+- [ ] Verificar e corrigir o endpoint `/usuarios/me` para garantir retorno correto e status 200.
+- [ ] Adicionar `cookie-parser` no `server.js` para suportar autenticação via cookie.
+- [ ] Ajustar logout para limpar cookie JWT do cliente.
+- [ ] Garantir que o segredo JWT esteja definido no `.env` para segurança.
+- [ ] Continuar validando campos extras e obrigatórios para manter API segura.
+
+---
+
+MatDias0307, você está no caminho certo, com código limpo, organizado e funcional! 🚀 A sua dedicação e cuidado com validações, autenticação e organização do projeto são evidentes. Agora, focar nos detalhes dos filtros, mensagens de erro e autenticação via cookies vai te levar a um nível ainda mais profissional.
+
+Continue assim, a prática constante e o refinamento são o segredo para se tornar um(a) desenvolvedor(a) top! 💪✨
+
+Se precisar, estarei aqui para te ajudar! 😉
+
+Um abraço e sucesso! 👊🔥
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
