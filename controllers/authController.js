@@ -25,7 +25,7 @@ async function register(req, res) {
 
         const newUser = await usersRepository.create({ 
             nome, 
-            email: normalizedEmail, 
+            email: normalizedEmail,
             senha 
         });
         
@@ -35,12 +35,11 @@ async function register(req, res) {
             data: {
                 id: newUser.id,
                 nome: newUser.nome,
-                email: newUser.email,
-                created_at: newUser.created_at
+                email: newUser.email
             }
         });
     } catch (error) {
-        if (error.code === '23505' && error.constraint === 'usuarios_email_unique') {
+        if (error.code === '23505') {
             return res.status(400).json({
                 status: 400,
                 message: "Email já está em uso"
@@ -50,7 +49,7 @@ async function register(req, res) {
         res.status(500).json({
             status: 500,
             message: "Erro interno no servidor",
-            error: error.message
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Erro interno'
         });
     }
 }
@@ -104,23 +103,6 @@ async function login(req, res) {
 
 async function logout(req, res) {
     try {
-        res.json({
-            status: 200,
-            message: "Logout realizado com sucesso"
-        });
-    } catch (error) {
-        res.status(500).json({
-            status: 500,
-            message: "Erro interno no servidor",
-            error: error.message
-        });
-    }
-}
-
-async function logout(req, res) {
-    try {
-        res.clearCookie('access_token');
-        
         res.json({
             status: 200,
             message: "Logout realizado com sucesso"
@@ -190,8 +172,7 @@ async function getMe(req, res) {
             data: {
                 id: user.id,
                 nome: user.nome,
-                email: user.email,
-                created_at: user.created_at ? user.created_at.toISOString() : null
+                email: user.email
             }
         });
     } catch (error) {
@@ -214,9 +195,15 @@ function validateRegisterPayload(body) {
         });
     }
     
-    if (!body.nome) errors.push("O campo 'nome' é obrigatório");
-    if (!body.email) errors.push("O campo 'email' é obrigatório");
-    if (!body.senha) errors.push("O campo 'senha' é obrigatório");
+    if (!body.nome || typeof body.nome !== 'string' || body.nome.trim() === '') {
+        errors.push("O campo 'nome' é obrigatório e deve ser uma string não vazia");
+    }
+    if (!body.email || typeof body.email !== 'string' || body.email.trim() === '') {
+        errors.push("O campo 'email' é obrigatório e deve ser uma string não vazia");
+    }
+    if (!body.senha || typeof body.senha !== 'string' || body.senha.trim() === '') {
+        errors.push("O campo 'senha' é obrigatório e deve ser uma string não vazia");
+    }
     
     if (body.email && !isValidEmail(body.email)) {
         errors.push("Email inválido");

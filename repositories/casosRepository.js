@@ -58,3 +58,12 @@ function mapCase(caseData) {
 function formatDate(date) {
     return new Date(date).toISOString().split("T")[0];
 }
+
+module.exports = {
+    findAll,
+    findById,
+    create,
+    update,
+    remove,
+    searchWithFilters
+}
