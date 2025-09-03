@@ -29,23 +29,24 @@ async function searchWithFilters({ agente_id, status, q }) {
     const cleanStatus = status ? status.trim().toLowerCase() : null;
     const cleanQuery = q ? q.trim() : null;
     
-    const cases = await db('casos')
-        .modify(function(queryBuilder) {
-            if (validAgentId !== null) {
-                queryBuilder.where('agente_id', validAgentId);
-            }
-            if (cleanStatus) {
-                queryBuilder.where('status', cleanStatus);
-            }
-            if (cleanQuery) {
-                const escapedQuery = cleanQuery.replace(/[%_]/g, '\\$&');
-                queryBuilder.where(function() {
-                    this.where('titulo', 'ilike', `%${escapedQuery}%`)
-                        .orWhere('descricao', 'ilike', `%${escapedQuery}%`);
-                });
-            }
-        });
+    const query = db('casos');
     
+    if (validAgentId !== null) {
+        query.where('agente_id', validAgentId);
+    }
+    
+    if (cleanStatus) {
+        query.where('status', cleanStatus);
+    }
+    
+    if (cleanQuery) {
+        query.where(function() {
+            this.where('titulo', 'ilike', `%${cleanQuery}%`)
+                .orWhere('descricao', 'ilike', `%${cleanQuery}%`);
+        });
+    }
+    
+    const cases = await query;
     return cases.map(mapCase);
 }
 

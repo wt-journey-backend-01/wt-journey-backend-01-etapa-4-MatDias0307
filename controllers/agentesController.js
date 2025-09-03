@@ -13,7 +13,16 @@ async function getAllAgents(req, res) {
         }
 
         if (cargo !== undefined) {
-            if (typeof cargo !== 'string' || !['delegado', 'inspetor', 'detetive'].includes(cargo.toLowerCase())) {
+            if (typeof cargo !== 'string') {
+                return res.status(400).json({
+                    status: 400,
+                    message: "Parâmetros inválidos",
+                    errors: ["O parâmetro 'cargo' deve ser uma string"]
+                });
+            }
+            
+            const normalizedCargo = cargo.toLowerCase();
+            if (!['delegado', 'inspetor', 'detetive'].includes(normalizedCargo)) {
                 return res.status(400).json({
                     status: 400,
                     message: "Parâmetros inválidos",

@@ -17,7 +17,7 @@ app.use(cookieParser());
 
 app.use("/agentes", authMiddleware, agentesRoutes);
 app.use("/casos", authMiddleware, casosRoutes);
-app.use(authRoutes);
+app.use('/auth', authRoutes);
 
 setupSwagger(app);
 app.use(errorHandler);

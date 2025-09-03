@@ -172,7 +172,8 @@ async function getMe(req, res) {
             data: {
                 id: user.id,
                 nome: user.nome,
-                email: user.email
+                email: user.email,
+                created_at: user.created_at
             }
         });
     } catch (error) {
@@ -195,35 +196,35 @@ function validateRegisterPayload(body) {
         });
     }
     
-    if (!body.nome || typeof body.nome !== 'string' || body.nome.trim() === '') {
-        errors.push("O campo 'nome' é obrigatório e deve ser uma string não vazia");
-    }
-    if (!body.email || typeof body.email !== 'string' || body.email.trim() === '') {
-        errors.push("O campo 'email' é obrigatório e deve ser uma string não vazia");
-    }
-    if (!body.senha || typeof body.senha !== 'string' || body.senha.trim() === '') {
-        errors.push("O campo 'senha' é obrigatório e deve ser uma string não vazia");
+    if (!body.nome) {
+        errors.push("O campo 'nome' é obrigatório");
+    } else if (typeof body.nome !== 'string') {
+        errors.push("O campo 'nome' deve ser uma string");
+    } else if (body.nome.trim() === '') {
+        errors.push("O campo 'nome' não pode estar vazio");
     }
     
-    if (body.email && !isValidEmail(body.email)) {
+    if (!body.email) {
+        errors.push("O campo 'email' é obrigatório");
+    } else if (typeof body.email !== 'string') {
+        errors.push("O campo 'email' deve ser uma string");
+    } else if (body.email.trim() === '') {
+        errors.push("O campo 'email' não pode estar vazio");
+    } else if (!isValidEmail(body.email)) {
         errors.push("Email inválido");
     }
     
-    if (body.senha && !isValidPassword(body.senha)) {
+    if (!body.senha) {
+        errors.push("O campo 'senha' é obrigatório");
+    } else if (typeof body.senha !== 'string') {
+        errors.push("O campo 'senha' deve ser uma string");
+    } else if (body.senha.trim() === '') {
+        errors.push("O campo 'senha' não pode estar vazio");
+    } else if (!isValidPassword(body.senha)) {
         errors.push("Senha deve ter pelo menos 8 caracteres, incluindo maiúsculas, minúsculas, números e caracteres especiais");
     }
     
     return errors;
-}
-
-function isValidId(id) {
-    const numId = parseInt(id, 10);
-    return !isNaN(numId) && numId > 0;
-}
-
-function isValidEmail(email) {
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return regex.test(email);
 }
 
 function isValidPassword(password) {
@@ -234,6 +235,16 @@ function isValidPassword(password) {
     const hasSpecialChar = /[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password);
     
     return minLength && hasUpperCase && hasLowerCase && hasNumber && hasSpecialChar;
+}
+
+function isValidId(id) {
+    const numId = parseInt(id, 10);
+    return !isNaN(numId) && numId > 0;
+}
+
+function isValidEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
 }
 
 module.exports = {
