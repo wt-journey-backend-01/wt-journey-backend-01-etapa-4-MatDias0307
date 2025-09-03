@@ -11,10 +11,11 @@ function authMiddleware(req, res, next) {
     }
 
     const authHeader = req.headers["authorization"];
-    const headerToken = authHeader && authHeader.split(" ")[1];
+    if (!authHeader) {
+      return res.status(401).json({ status: 401, message: "Token não fornecido" });
+    }
 
-    const token = headerToken;
-
+    const token = authHeader.split(" ")[1];
     if (!token) {
       return res.status(401).json({ status: 401, message: "Token não fornecido" });
     }

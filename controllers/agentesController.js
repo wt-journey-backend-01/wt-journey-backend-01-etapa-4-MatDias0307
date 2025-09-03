@@ -153,6 +153,13 @@ async function updateAgent(req, res) {
         }
 
         const updatedAgent = await agentsRepository.update(req.params.id, req.body);
+        if (!updatedAgent) {
+            return res.status(404).json({ 
+                status: 404,
+                message: "Agente não encontrado"
+            });
+        }
+
         res.json(updatedAgent);
     } catch (error) {
         res.status(500).json({ 
@@ -198,6 +205,13 @@ async function patchAgent(req, res) {
         }
 
         const updatedAgent = await agentsRepository.update(req.params.id, req.body);
+        if (!updatedAgent) {
+            return res.status(404).json({ 
+                status: 404,
+                message: "Agente não encontrado"
+            });
+        }
+
         res.json(updatedAgent);
     } catch (error) {
         res.status(500).json({ 

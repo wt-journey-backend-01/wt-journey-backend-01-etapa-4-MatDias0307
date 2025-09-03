@@ -5,7 +5,7 @@ async function getAllCases(req, res) {
     try {
         const { agente_id, status, q } = req.query;
 
-        if (status && !['aberto', 'solucionado'].includes(status.toLowerCase())) {
+        if (status && typeof status === 'string' && !['aberto', 'solucionado'].includes(status.toLowerCase())) {
             return res.status(400).json({
                 status: 400,
                 message: "Parâmetros inválidos",
@@ -150,14 +150,14 @@ async function updateCase(req, res) {
         }
 
         const updatedCase = await casesRepository.update(req.params.id, req.body);
-        if (updatedCase) {
-            res.json(updatedCase);
-        } else {
-            res.status(404).json({ 
+        if (!updatedCase) {
+            return res.status(404).json({ 
                 status: 404,
-                message: "Caso não encontrado" 
+                message: "Caso não encontrado"
             });
         }
+
+        res.json(updatedCase);
     } catch (error) {
         res.status(500).json({ 
             status: 500,
@@ -222,6 +222,13 @@ async function patchCase(req, res) {
         }
 
         const updatedCase = await casesRepository.update(req.params.id, req.body);
+        if (!updatedCase) {
+            return res.status(404).json({ 
+                status: 404,
+                message: "Caso não encontrado"
+            });
+        }
+
         res.json(updatedCase);
     } catch (error) {
         res.status(500).json({ 

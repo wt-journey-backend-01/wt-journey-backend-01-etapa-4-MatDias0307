@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const agentesController = require('../controllers/agentesController');
-const authMiddleware = require('../middlewares/authMiddleware');
 
 /**
  * @swagger
@@ -77,7 +76,7 @@ const authMiddleware = require('../middlewares/authMiddleware');
  *       401:
  *         description: Não autorizado
  */
-router.get('/', authMiddleware, agentesController.getAllAgents);
+router.get('/', agentesController.getAllAgents);
 
 /**
  * @swagger
@@ -108,7 +107,7 @@ router.get('/', authMiddleware, agentesController.getAllAgents);
  *       404:
  *         description: Agente não encontrado
  */
-router.get('/:id', authMiddleware, agentesController.getAgentById);
+router.get('/:id', agentesController.getAgentById);
 
 /**
  * @swagger
@@ -143,7 +142,7 @@ router.get('/:id', authMiddleware, agentesController.getAgentById);
  *       401:
  *         description: Não autorizado
  */
-router.post('/', authMiddleware, agentesController.createAgent);
+router.post('/', agentesController.createAgent);
 
 /**
  * @swagger
@@ -180,7 +179,7 @@ router.post('/', authMiddleware, agentesController.createAgent);
  *       404:
  *         description: Agente não encontrado
  */
-router.put('/:id', authMiddleware, agentesController.updateAgent);
+router.put('/:id', agentesController.updateAgent);
 
 /**
  * @swagger
@@ -226,7 +225,7 @@ router.put('/:id', authMiddleware, agentesController.updateAgent);
  *       404:
  *         description: Agente não encontrado
  */
-router.patch('/:id', authMiddleware, agentesController.patchAgent);
+router.patch('/:id', agentesController.patchAgent);
 
 /**
  * @swagger
@@ -253,7 +252,7 @@ router.patch('/:id', authMiddleware, agentesController.patchAgent);
  *       404:
  *         description: Agente não encontrado
  */
-router.delete('/:id', authMiddleware, agentesController.deleteAgent);
+router.delete('/:id', agentesController.deleteAgent);
 
 /**
  * @swagger
@@ -291,6 +290,6 @@ router.delete('/:id', authMiddleware, agentesController.deleteAgent);
  *       404:
  *         description: Agente não encontrado
  */
-router.get('/:id/casos', authMiddleware, agentesController.getCasesByAgentId);
+router.get('/:id/casos', agentesController.getCasesByAgentId);
 
 module.exports = router;
