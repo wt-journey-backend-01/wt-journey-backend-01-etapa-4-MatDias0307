@@ -20,6 +20,10 @@ async function update(id, updatedData) {
     return updated ? mapCase(updated) : null;
 }
 
+async function remove(id) {
+    return db("casos").where({ id: Number(id) }).del();
+}
+
 async function searchWithFilters({ agente_id, status, q }) {
     const validAgentId = agente_id && !isNaN(Number(agente_id)) ? Number(agente_id) : null;
     const cleanStatus = status ? status.trim().toLowerCase() : null;
