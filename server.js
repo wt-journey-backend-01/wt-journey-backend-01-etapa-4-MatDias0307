@@ -1,5 +1,7 @@
 require("dotenv").config();
+
 const express = require("express");
+const cookieParser = require("cookie-parser");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -11,16 +13,15 @@ const setupSwagger = require("./docs/swagger");
 const { errorHandler } = require("./utils/errorHandler");
 
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-app.use("/auth", authRoutes);
+app.use(cookieParser());
 
 app.use("/agentes", authMiddleware, agentesRoutes);
 app.use("/casos", authMiddleware, casosRoutes);
+app.use(authRoutes);
 
 setupSwagger(app);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-    console.log(`Servidor rodando em http://localhost:${PORT}`);
+    console.log(`Servidor do Departamento de Polícia rodando em http://localhost:${PORT}.`);
 });

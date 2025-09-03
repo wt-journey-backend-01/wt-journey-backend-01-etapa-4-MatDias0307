@@ -16,7 +16,7 @@ async function create(userData) {
     
     const normalizedData = {
         ...data,
-        email: data.email.toLowerCase(),
+        email: data.email.trim().toLowerCase(),
         senha: passwordHash
     };
     

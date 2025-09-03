@@ -15,7 +15,7 @@ async function create(agent) {
   return mapAgent(created);
 }
 
-async function update(updatedData, id) {
+async function update(id, updatedData) {
   const [updated] = await db("agentes").where({ id: Number(id) }).update(updatedData).returning("*");
   return updated ? mapAgent(updated) : null;
 }

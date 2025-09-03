@@ -264,36 +264,36 @@ function validateAgentForUpdate(agent, isFullUpdate = false) {
     const errors = [];
     
     if (agent.id !== undefined) {
-        errors.push({ field: 'id', message: "O campo 'id' não pode ser alterado" });
+        errors.push("O campo 'id' não pode ser alterado");
     }
 
     if (isFullUpdate) {
-        if (!agent.nome) errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
-        if (!agent.dataDeIncorporacao) errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
-        if (!agent.cargo) errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
+        if (!agent.nome) errors.push("O campo 'nome' é obrigatório");
+        if (!agent.dataDeIncorporacao) errors.push("O campo 'dataDeIncorporacao' é obrigatório");
+        if (!agent.cargo) errors.push("O campo 'cargo' é obrigatório");
     }
 
     if (agent.nome !== undefined && typeof agent.nome !== 'string') {
-        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
+        errors.push("O campo 'nome' deve ser uma string");
     }
 
     if (agent.dataDeIncorporacao !== undefined) {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(agent.dataDeIncorporacao)) {
-            errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
+            errors.push("Formato inválido (use YYYY-MM-DD)");
         } else {
             const [year, month, day] = agent.dataDeIncorporacao.split('-').map(Number);
             const date = new Date(Date.UTC(year, month - 1, day));
             const today = new Date();
             today.setUTCHours(0,0,0,0);
             if (date > today) {
-                errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
+                errors.push("Data não pode ser futura");
             }
         }
     }
 
     if (agent.cargo !== undefined) {
         if (typeof agent.cargo !== 'string' || !['delegado','inspetor','detetive'].includes(agent.cargo.toLowerCase())) {
-            errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
+            errors.push("Cargo inválido (delegado, inspetor ou detetive)");
         }
     }
 
@@ -304,33 +304,33 @@ function validateAgentForCreate(agent) {
     const errors = [];
 
     if (agent.id !== undefined) {
-        errors.push({ field: 'id', message: "O campo 'id' não pode ser informado na criação" });
+        errors.push("O campo 'id' não pode ser informado na criação");
     }
 
     if (!agent.nome) {
-        errors.push({ field: 'nome', message: "O campo 'nome' é obrigatório" });
+        errors.push("O campo 'nome' é obrigatório");
     } else if (typeof agent.nome !== "string") {
-        errors.push({ field: 'nome', message: "O campo 'nome' deve ser uma string" });
+        errors.push("O campo 'nome' deve ser uma string");
     }
 
     if (!agent.dataDeIncorporacao) {
-        errors.push({ field: 'dataDeIncorporacao', message: "O campo 'dataDeIncorporacao' é obrigatório" });
+        errors.push("O campo 'dataDeIncorporacao' é obrigatório");
     } else if (!/^\d{4}-\d{2}-\d{2}$/.test(agent.dataDeIncorporacao)) {
-        errors.push({ field: 'dataDeIncorporacao', message: "Formato inválido (use YYYY-MM-DD)" });
+        errors.push("Formato inválido (use YYYY-MM-DD)" );
     } else {
         const [year, month, day] = agent.dataDeIncorporacao.split('-').map(Number);
         const date = new Date(Date.UTC(year, month - 1, day));
         const today = new Date();
         today.setUTCHours(0, 0, 0, 0);
         if (date > today) {
-            errors.push({ field: 'dataDeIncorporacao', message: "Data não pode ser futura" });
+            errors.push("Data não pode ser futura");
         }
     }
 
     if (!agent.cargo) {
-        errors.push({ field: 'cargo', message: "O campo 'cargo' é obrigatório" });
+        errors.push("O campo 'cargo' é obrigatório" );
     } else if (typeof agent.cargo !== "string" || !['delegado', 'inspetor', 'detetive'].includes(agent.cargo.toLowerCase())) {
-        errors.push({ field: 'cargo', message: "Cargo inválido (delegado, inspetor ou detetive)" });
+        errors.push("Cargo inválido (delegado, inspetor ou detetive)" );
     }
 
     return errors;

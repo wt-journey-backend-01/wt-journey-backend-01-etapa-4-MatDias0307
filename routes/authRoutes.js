@@ -218,6 +218,6 @@ router.delete('/usuarios/:id', authMiddleware, authController.deleteUser);
  *       404:
  *         description: Usuário não encontrado
  */
-router.get('/me', authMiddleware, authController.getMe);
+router.get('/usuarios/me', authMiddleware, authController.getMe);
 
 module.exports = router;
