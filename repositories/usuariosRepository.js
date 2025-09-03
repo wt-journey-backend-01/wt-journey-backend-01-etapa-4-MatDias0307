@@ -1,42 +1,28 @@
-const db = require('../db/db');
-const bcrypt = require('bcryptjs');
+const db = require("../db/db.js");
 
-async function findByEmail(email) {
-    const normalizedEmail = email.trim().toLowerCase();
-    return await db("usuarios").where({ email: normalizedEmail }).first();
+// ----- Encontrar Usuário Cadastrado -----
+async function encontrar(email) {
+  const encontrado = await db("usuarios").where({ email }).first();
+  return encontrado;
 }
 
-async function findById(id) {
-    return await db('usuarios').select('id', 'nome', 'email').where({ id: Number(id) }).first();
+// ----- Registrar um Usuário no Sistema -----
+async function registrar(usuario) {
+  const [registrado] = await db("usuarios").insert(usuario).returning("*");
+  return registrado;
 }
 
-async function create(userData) {
-    const { senha, ...data } = userData;
-    const passwordHash = await bcrypt.hash(senha, 12);
-    
-    const normalizedData = {
-        ...data,
-        email: data.email.trim().toLowerCase(),
-        senha: passwordHash
-    };
-    
-    const [newUser] = await db('usuarios').insert(normalizedData).returning(['id', 'nome', 'email']);
-    
-    return newUser;
+// ----- Deletar a Conta de um Usuário -----
+async function deletar(id) {
+  const deletado = await db("usuarios")
+    .where({ id: Number(id) })
+    .del();
+  return deletado;
 }
 
-async function verifyPassword(plainPassword, hashedPassword) {
-    return await bcrypt.compare(plainPassword, hashedPassword);
-}
-
-async function deleteUser(id) {
-    return await db('usuarios').where({ id: Number(id) }).del();
-}
-
+// ----- Exports -----
 module.exports = {
-    findByEmail,
-    findById,
-    create,
-    verifyPassword,
-    deleteUser
+  encontrar,
+  registrar,
+  deletar,
 };

@@ -1,74 +1,47 @@
-const db = require('../db/db');
+const db = require("../db/db.js");
 
-async function findAll() {
-    const cases = await db("casos");
-    return cases.map(mapCase);
-}
-  
-async function findById(id) {
-    const found = await db("casos").where({ id: Number(id) }).first();
-    return found ? mapCase(found) : null;
+// ----- Mostrar Todos os Casos -----
+async function listar() {
+  const listado = await db("casos");
+  return listado;
 }
 
-async function create(caseData) {
-    const [created] = await db("casos").insert(caseData).returning("*");
-    return mapCase(created);
+// ----- Mostrar Caso Referente ao ID -----
+async function encontrar(id) {
+  const encontrado = await db("casos")
+    .where({ id: Number(id) })
+    .first();
+  return encontrado;
 }
 
-async function update(id, updatedData) {
-    const [updated] = await db("casos").where({ id: Number(id) }).update(updatedData).returning("*");
-    return updated ? mapCase(updated) : null;
+// ----- Adicionar Novo Caso -----
+async function adicionar(caso) {
+  const adicionado = await db("casos").insert(caso).returning("*");
+  return adicionado;
 }
 
-async function remove(id) {
-    return db("casos").where({ id: Number(id) }).del();
+// ----- Atualizar Informações do Caso -----
+async function atualizar(dadosAtualizados, id) {
+  const atualizado = await db("casos")
+    .where({ id: Number(id) })
+    .update(dadosAtualizados)
+    .returning("*");
+  return atualizado;
 }
 
-async function searchWithFilters({ agente_id, status, q }) {
-    const validAgentId = agente_id && !isNaN(Number(agente_id)) ? Number(agente_id) : null;
-    const cleanStatus = status ? status.trim().toLowerCase() : null;
-    const cleanQuery = q ? q.trim() : null;
-    
-    const query = db('casos');
-    
-    if (validAgentId !== null) {
-        query.where('agente_id', validAgentId);
-    }
-    
-    if (cleanStatus) {
-        query.where('status', cleanStatus);
-    }
-    
-    if (cleanQuery) {
-        query.where(function() {
-            this.where('titulo', 'ilike', `%${cleanQuery}%`)
-                .orWhere('descricao', 'ilike', `%${cleanQuery}%`);
-        });
-    }
-    
-    const cases = await query;
-    return cases.map(mapCase);
+// ----- Deletar Caso -----
+async function deletar(id) {
+  const deletado = await db("casos")
+    .where({ id: Number(id) })
+    .del();
+  return deletado;
 }
 
-function mapCase(caseData) {
-    const formattedCase = { ...caseData };
-    
-    if (caseData.data) {
-        formattedCase.data = formatDate(caseData.data);
-    }
-    
-    return formattedCase;
-}
-
-function formatDate(date) {
-    return new Date(date).toISOString().split("T")[0];
-}
-
+// ----- Exports -----
 module.exports = {
-    findAll,
-    findById,
-    create,
-    update,
-    remove,
-    searchWithFilters
-}
+  listar,
+  encontrar,
+  adicionar,
+  atualizar,
+  deletar,
+};

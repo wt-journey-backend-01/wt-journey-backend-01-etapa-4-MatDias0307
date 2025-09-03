@@ -2,25 +2,17 @@ const jwt = require("jsonwebtoken");
 
 function authMiddleware(req, res, next) {
   try {
-    const jwtSecret = process.env.JWT_SECRET;
-    if (!jwtSecret) {
-      return res.status(500).json({ 
-        status: 500, 
-        message: "Erro de configuração do servidor" 
-      });
-    }
-
+    const cookieToken = req.cookies?.access_token;
     const authHeader = req.headers["authorization"];
-    if (!authHeader) {
-      return res.status(401).json({ status: 401, message: "Token não fornecido" });
-    }
+    const headerToken = authHeader && authHeader.split(" ")[1];
 
-    const token = authHeader.split(" ")[1];
+    const token = cookieToken || headerToken;
+
     if (!token) {
       return res.status(401).json({ status: 401, message: "Token não fornecido" });
     }
 
-    const usuario = jwt.verify(token, jwtSecret);
+    const usuario = (req.user = jwt.verify(token, process.env.JWT_SECRET || "secret"));
     req.user = usuario;
 
     next();

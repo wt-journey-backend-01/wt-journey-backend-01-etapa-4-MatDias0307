@@ -1,27 +1,30 @@
 require("dotenv").config();
+const authMiddleware = require("./middlewares/authMiddleware.js");
 
 const express = require("express");
-const cookieParser = require("cookie-parser");
 const app = express();
-const PORT = process.env.PORT || 3000;
+const port = 3000;
 
-const authRoutes = require("./routes/authRoutes");
-const agentesRoutes = require("./routes/agentesRoutes");
-const casosRoutes = require("./routes/casosRoutes");
-const authMiddleware = require("./middlewares/authMiddleware");
-const setupSwagger = require("./docs/swagger");
-const { errorHandler } = require("./utils/errorHandler");
+const authRoutes = require("./routes/authRoutes.js");
+const agentesRoutes = require("./routes/agentesRoutes.js");
+const casosRoutes = require("./routes/casosRoutes.js");
+
+const setupSwagger = require("./docs/swagger.js");
+const { errorHandler } = require("./utils/errorHandler.js");
 
 app.use(express.json());
-app.use(cookieParser());
 
+// Rotas da API
+app.use(authRoutes);
 app.use("/agentes", authMiddleware, agentesRoutes);
 app.use("/casos", authMiddleware, casosRoutes);
-app.use('/auth', authRoutes);
 
+// Configuração do Swagger para documentação
 setupSwagger(app);
 app.use(errorHandler);
 
-app.listen(PORT, () => {
-    console.log(`Servidor do Departamento de Polícia rodando em http://localhost:${PORT}.`);
+// Inicia o servidor
+app.listen(port, () => {
+  console.log(`\nServidor do departamento de polícia rodando em http://localhost:${port}`);
+  console.log(`Documentação da API disponível em http://localhost:${port}/api-docs`);
 });

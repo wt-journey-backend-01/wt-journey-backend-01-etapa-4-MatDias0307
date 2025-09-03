@@ -1,28 +1,16 @@
 const bcrypt = require("bcrypt");
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> }
+ */
 
 async function seed(knex) {
+  // deleta:
   await knex("usuarios").del();
-
-  const senhaAdmin = await bcrypt.hash('Admin123!', 12);
-  const senhaDelegado = await bcrypt.hash('Delegado123!', 12);
-  const senhaInspetor = await bcrypt.hash('Inspetor123!', 12);
-
+  // popula:
   await knex("usuarios").insert([
-    {
-      nome: 'Administrador do Sistema',
-      email: 'admin@policia.com',
-      senha: senhaAdmin,
-    },
-    {
-      nome: 'Rommel Carneiro',
-      email: 'rommel.carneiro@policia.com',
-      senha: senhaDelegado,
-    },
-    {
-      nome: 'Ana Silva',
-      email: 'ana.silva@policia.com', 
-      senha: senhaInspetor,
-    }
+    { nome: "Matheus", email: "matheus@email.com", senha: await bcrypt.hash("Mudar.1234", 10) },
+    { nome: "Lucas", email: "lucas@email.com", senha: await bcrypt.hash("Mudar.321", 10) },
   ]);
 }
 

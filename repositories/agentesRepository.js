@@ -1,77 +1,52 @@
-const db = require('../db/db');
+const db = require("../db/db.js");
 
-async function findAll() {
-  const agents = await db("agentes");
-  return agents.map(mapAgent);
+// ----- Mostrar Todos os Agentes -----
+async function listar() {
+  const listado = await db("agentes");
+  return listado.map((agente) => ({ ...agente, dataDeIncorporacao: new Date(agente.dataDeIncorporacao).toISOString().split("T")[0] }));
 }
 
-async function findById(id) {
-  const found = await db("agentes").where({ id: Number(id) }).first();
-  return found ? mapAgent(found) : null;
+// ----- Mostrar Agente Referente ao ID -----
+async function encontrar(id) {
+  const encontrado = await db("agentes")
+    .where({ id: Number(id) })
+    .first();
+
+  if (!encontrado) return null;
+
+  return { ...encontrado, dataDeIncorporacao: new Date(encontrado.dataDeIncorporacao).toISOString().split("T")[0] };
 }
 
-async function create(agent) {
-  const [created] = await db("agentes").insert(agent).returning("*");
-  return mapAgent(created);
+// ----- Adicionar Novo Agente -----
+async function adicionar(agente) {
+  const [adicionado] = await db("agentes").insert(agente).returning("*");
+  return { ...adicionado, dataDeIncorporacao: new Date(adicionado.dataDeIncorporacao).toISOString().split("T")[0] };
 }
 
-async function update(id, updatedData) {
-  const [updated] = await db("agentes").where({ id: Number(id) }).update(updatedData).returning("*");
-  return updated ? mapAgent(updated) : null;
+// ----- Atualizar Informações do Agente -----
+async function atualizar(dadosAtualizados, id) {
+  const [atualizado] = await db("agentes")
+    .where({ id: Number(id) })
+    .update(dadosAtualizados)
+    .returning("*");
+
+  if (!atualizado) return null;
+  return { ...atualizado, dataDeIncorporacao: new Date(atualizado.dataDeIncorporacao).toISOString().split("T")[0] };
 }
 
-async function remove(id) {
-  return db("agentes").where({ id: Number(id) }).del();
+// ----- Deletar Agente -----
+async function deletar(id) {
+  const deletado = await db("agentes")
+    .where({ id: Number(id) })
+    .del();
+  return deletado;
 }
 
-async function findByCargo(cargo) {
-  const agents = await db("agentes").where("cargo", "ilike", cargo);
-  return agents.map(mapAgent);
-}
-
-async function sortByIncorporacao(order = "asc") {
-  const agents = await db("agentes").orderBy("dataDeIncorporacao", order === "asc" ? "asc" : "desc");
-  return agents.map(mapAgent);
-}
-
-async function findFiltered({ cargo, sort } = {}) {
-  const qb = db("agentes");
-
-  if (cargo) {
-    qb.whereRaw("LOWER(cargo) = ?", [cargo.toLowerCase()]);
-  }
-
-  if (sort) {
-    qb.orderBy("dataDeIncorporacao", sort.startsWith("-") ? "desc" : "asc");
-  }
-
-  const agents = await qb.select("*");
-  return agents.map(mapAgent);
-}
-
-async function getCasosByAgenteId(agenteId) {
-  const casos = await db("casos").where({ agente_id: agenteId });
-  return casos.map((caso) =>
-    caso.data ? { ...caso, data: formatDate(caso.data) } : caso
-  );
-}
-
-function formatDate(date) {
-  return new Date(date).toISOString().split("T")[0];
-}
-
-function mapAgent(agent) {
-  return { ...agent, dataDeIncorporacao: formatDate(agent.dataDeIncorporacao) };
-}
-
+// ----- Exports -----
 module.exports = {
-  findAll,
-  findById,
-  create,
-  update,
-  remove,
-  findByCargo,
-  sortByIncorporacao,
-  findFiltered,
-  getCasosByAgenteId,
+  listar,
+  encontrar,
+  adicionar,
+  atualizar,
+  deletar,
 };

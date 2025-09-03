@@ -1,18 +1,15 @@
+/**
+ * @param { import("knex").Knex } knex
+ * @returns { Promise<void> }
+ */
+
 async function seed(knex) {
+  // deleta:
   await knex("casos").del();
+  // popula:
   await knex("casos").insert([
-    {
-      titulo: "Homicídio no Centro",
-      descricao: "Vítima encontrada com sinais de arma branca",
-      status: "aberto",
-      agente_id: 1
-    },
-    {
-      titulo: "Roubo a Banco",
-      descricao: "Assalto à agência central durante o dia",
-      status: "solucionado",
-      agente_id: 2
-    }
+    { titulo: "Desaparecimento", descricao: "Desaparecimento de eposa do filho do prefeito.", status: "aberto", agente_id: 1 },
+    { titulo: "Operação Vagalume", descricao: "Desaparecimento de documentos relevantes.", status: "solucionado", agente_id: 2 },
   ]);
 }
 
