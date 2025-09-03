@@ -172,8 +172,7 @@ async function getMe(req, res) {
             data: {
                 id: user.id,
                 nome: user.nome,
-                email: user.email,
-                created_at: user.created_at
+                email: user.email
             }
         });
     } catch (error) {
